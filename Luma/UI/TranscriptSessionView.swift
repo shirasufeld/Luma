@@ -6,6 +6,7 @@ import SwiftUI
 struct TranscriptSessionView: View {
     @Bindable var store: SessionStore
     let session: SessionController
+    var overlay: SubtitleOverlayController?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +26,17 @@ struct TranscriptSessionView: View {
                 .disabled(store.sessionState != .idle)
 
                 controlButtons
+
+                if let overlay {
+                    Toggle(
+                        "Overlay", systemImage: "rectangle.inset.bottomright.filled",
+                        isOn: Binding(
+                            get: { overlay.isVisible },
+                            set: { _ in overlay.toggle() }
+                        )
+                    )
+                    .help("Show or hide the floating caption window")
+                }
             }
         }
     }

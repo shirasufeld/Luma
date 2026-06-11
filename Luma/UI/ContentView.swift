@@ -6,10 +6,15 @@ struct ContentView: View {
     var body: some View {
         TabView {
             Tab("Session", systemImage: "captions.bubble") {
-                TranscriptSessionView(store: dependencies.store, session: dependencies.session)
+                TranscriptSessionView(
+                    store: dependencies.store,
+                    session: dependencies.session,
+                    overlay: dependencies.overlay)
             }
             Tab("Diagnostics", systemImage: "checklist") {
-                CapabilityPanel(capabilities: dependencies.capabilities)
+                CapabilityPanel(
+                    capabilities: dependencies.capabilities,
+                    languagePair: dependencies.store.languagePair)
             }
         }
         .frame(minWidth: 560, minHeight: 400)

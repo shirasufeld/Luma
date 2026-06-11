@@ -8,6 +8,7 @@ final class AppDependencies {
     let capabilities: any CapabilityChecking
     let store: SessionStore
     let session: SessionController
+    let overlay: SubtitleOverlayController
 
     init(
         capabilities: any CapabilityChecking = CapabilityService(),
@@ -18,6 +19,7 @@ final class AppDependencies {
         self.capabilities = capabilities
         let store = SessionStore()
         self.store = store
+        self.overlay = SubtitleOverlayController(store: store)
         self.session = SessionController(
             store: store,
             capabilities: capabilities,

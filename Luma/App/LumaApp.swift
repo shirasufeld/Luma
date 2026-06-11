@@ -8,5 +8,9 @@ struct LumaApp: App {
         WindowGroup {
             ContentView(dependencies: dependencies)
         }
+
+        Settings {
+            SettingsView(store: dependencies.store, capabilities: dependencies.capabilities)
+        }
     }
 }
