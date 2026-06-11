@@ -6,8 +6,31 @@ import Foundation
 @MainActor
 final class AppDependencies {
     let capabilities: any CapabilityChecking
+    let store: SessionStore
+    let session: SessionController
 
-    init(capabilities: any CapabilityChecking = CapabilityService()) {
+    init(
+        capabilities: any CapabilityChecking = CapabilityService(),
+        transcription: (any TranscriptionProviding)? = nil,
+        audioProviderFactory: (@Sendable (AudioInputKind) -> any AudioInputProviding)? = nil
+    ) {
         self.capabilities = capabilities
+        let store = SessionStore()
+        self.store = store
+        self.session = SessionController(
+            store: store,
+            capabilities: capabilities,
+            transcription: transcription ?? SpeechAnalyzerTranscriber(),
+            audioProviderFactory: audioProviderFactory ?? { kind in
+                switch kind {
+                case .microphone:
+                    MicrophoneAudioProvider()
+                case .systemAudio:
+                    // System audio capture lands with the Core Audio tap
+                    // provider milestone; the mic is the safe stand-in.
+                    MicrophoneAudioProvider()
+                }
+            }
+        )
     }
 }
