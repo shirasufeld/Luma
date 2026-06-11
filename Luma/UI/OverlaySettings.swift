@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 /// UserDefaults-backed overlay appearance settings, shared between the
 /// Settings pane and the overlay view via `@AppStorage`.
@@ -21,7 +21,7 @@ nonisolated enum OverlaySurfaceStyle: String, CaseIterable, Identifiable, Sendab
 
     var id: String { rawValue }
 
-    var label: String {
+    var label: LocalizedStringKey {
         switch self {
         case .liquidGlass: "Liquid Glass"
         case .material: "Material"

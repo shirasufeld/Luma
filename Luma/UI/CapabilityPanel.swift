@@ -68,14 +68,14 @@ struct CapabilityPanel: View {
         snapshot = next
     }
 
-    private func row(_ title: String, status: (String, Color)) -> some View {
+    private func row(_ title: LocalizedStringKey, status: (LocalizedStringKey, Color)) -> some View {
         LabeledContent(title) {
             Text(status.0)
                 .foregroundStyle(status.1)
         }
     }
 
-    private func permissionLabel(_ state: PermissionState) -> (String, Color) {
+    private func permissionLabel(_ state: PermissionState) -> (LocalizedStringKey, Color) {
         switch state {
         case .granted: ("Granted", .green)
         case .denied: ("Denied", .red)
@@ -83,7 +83,7 @@ struct CapabilityPanel: View {
         }
     }
 
-    private func transcriptionLabel(_ state: TranscriptionAvailability) -> (String, Color) {
+    private func transcriptionLabel(_ state: TranscriptionAvailability) -> (LocalizedStringKey, Color) {
         switch state {
         case .installed: ("Installed", .green)
         case .supported: ("Download required", .orange)
@@ -92,7 +92,7 @@ struct CapabilityPanel: View {
         }
     }
 
-    private func translationLabel(_ state: TranslationAvailability) -> (String, Color) {
+    private func translationLabel(_ state: TranslationAvailability) -> (LocalizedStringKey, Color) {
         switch state {
         case .installed: ("Installed", .green)
         case .supported: ("Download required", .orange)

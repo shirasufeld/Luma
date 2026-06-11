@@ -231,15 +231,18 @@ actor SessionController {
     private static func message(for error: any Error) -> String {
         switch error {
         case SessionError.microphoneAccessDenied:
-            return "Microphone access is denied. Enable it in System Settings > Privacy & Security."
+            return String(
+                localized:
+                    "Microphone access is denied. Enable it in System Settings > Privacy & Security."
+            )
         case TranscriptionError.unavailableOnDevice:
-            return "Speech-to-text is not available on this device."
+            return String(localized: "Speech-to-text is not available on this device.")
         case TranscriptionError.unsupportedLocale(let locale):
-            return "Transcription does not support \(locale.identifier)."
+            return String(localized: "Transcription does not support \(locale.identifier).")
         case TranscriptionError.modelAssetsUnavailable:
-            return "Transcription model assets could not be installed."
+            return String(localized: "Transcription model assets could not be installed.")
         case TranscriptionError.noCompatibleAudioFormat:
-            return "No compatible audio format for the transcriber."
+            return String(localized: "No compatible audio format for the transcriber.")
         default:
             return error.localizedDescription
         }

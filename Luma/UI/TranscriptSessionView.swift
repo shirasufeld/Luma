@@ -211,7 +211,7 @@ struct TranscriptSessionView: View {
         .padding(.vertical, 6)
     }
 
-    private var sessionLabel: String {
+    private var sessionLabel: LocalizedStringKey {
         switch store.sessionState {
         case .idle: "Idle"
         case .preparing: "Preparing"
@@ -238,7 +238,7 @@ struct TranscriptSessionView: View {
         }
     }
 
-    private var modelLabel: String {
+    private var modelLabel: LocalizedStringKey {
         switch store.modelState {
         case nil: "Model: —"
         case .checking: "Model: checking"

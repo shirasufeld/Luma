@@ -6,6 +6,9 @@ struct SettingsView: View {
     @Bindable var store: SessionStore
     let capabilities: any CapabilityChecking
 
+    @AppStorage(AppLanguage.defaultsKey)
+    private var appLanguageRaw = AppLanguage.system.rawValue
+
     var body: some View {
         TabView {
             Tab("General", systemImage: "gearshape") {
@@ -20,12 +23,19 @@ struct SettingsView: View {
         }
         .frame(width: 460, height: 400)
         .navigationTitle("Settings")
+        .appLanguage(appLanguageRaw)
     }
 }
 
 private struct GeneralSettingsView: View {
     @Bindable var store: SessionStore
     let capabilities: any CapabilityChecking
+
+    @AppStorage(AppLanguage.defaultsKey)
+    private var appLanguageRaw = AppLanguage.system.rawValue
+
+    @Environment(\.locale)
+    private var displayLocale
 
     @State private var transcriptionLocales: [Locale] = []
     @State private var translationLanguages: [Locale.Language] = []
@@ -34,6 +44,15 @@ private struct GeneralSettingsView: View {
 
     var body: some View {
         Form {
+            Section("App Language") {
+                Picker("App Language", selection: $appLanguageRaw) {
+                    Text("System").tag(AppLanguage.system.rawValue)
+                    Text(verbatim: "English").tag(AppLanguage.english.rawValue)
+                    Text(verbatim: "简体中文").tag(AppLanguage.simplifiedChinese.rawValue)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
             Section("Languages") {
                 Picker("Transcribe", selection: transcriptionSelection) {
                     ForEach(transcriptionLocales, id: \.identifier) { locale in
@@ -46,12 +65,14 @@ private struct GeneralSettingsView: View {
                     }
                 }
             }
+            .disabled(!isSessionIdle)
             Section("Audio") {
                 Picker("Input source", selection: $store.inputKind) {
                     Text("Microphone").tag(AudioInputKind.microphone)
                     Text("System Audio").tag(AudioInputKind.systemAudio)
                 }
             }
+            .disabled(!isSessionIdle)
             Section("Translation") {
                 Picker("Mode", selection: $store.translationMode) {
                     Text("Accurate (slower)").tag(TranslationMode.accurate)
@@ -59,10 +80,13 @@ private struct GeneralSettingsView: View {
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
-                Text("Accurate favors sentence quality; Realtime favors lower latency. Takes effect on the next start.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Accurate favors sentence quality; Realtime favors lower latency. Takes effect on the next start."
+                )
+                .font(.callout)
+                .foregroundStyle(.secondary)
             }
+            .disabled(!isSessionIdle)
             if !isSessionIdle {
                 Text("Stop the session to change languages or input.")
                     .font(.callout)
@@ -70,7 +94,6 @@ private struct GeneralSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .disabled(!isSessionIdle)
         .task {
             transcriptionLocales = await capabilities.supportedTranscriptionLocales()
                 .sorted { $0.identifier < $1.identifier }
@@ -112,12 +135,12 @@ private struct GeneralSettingsView: View {
     }
 
     private func displayName(forLocale locale: Locale) -> String {
-        Locale.current.localizedString(forIdentifier: locale.identifier) ?? locale.identifier
+        displayLocale.localizedString(forIdentifier: locale.identifier) ?? locale.identifier
     }
 
     private func displayName(forLanguage language: Locale.Language) -> String {
         let identifier = language.minimalIdentifier
-        return Locale.current.localizedString(forIdentifier: identifier) ?? identifier
+        return displayLocale.localizedString(forIdentifier: identifier) ?? identifier
     }
 }
 

@@ -5,6 +5,8 @@ struct ContentView: View {
 
     @AppStorage(AppearanceSettingsKey.accentHex)
     private var accentHex = ""
+    @AppStorage(AppLanguage.defaultsKey)
+    private var appLanguageRaw = AppLanguage.system.rawValue
 
     var body: some View {
         TabView {
@@ -24,5 +26,6 @@ struct ContentView: View {
         .frame(minWidth: 560, minHeight: 400)
         .navigationTitle("Luma")
         .tint(Color(hexString: accentHex) ?? .accentColor)
+        .appLanguage(appLanguageRaw)
     }
 }

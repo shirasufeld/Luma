@@ -18,6 +18,9 @@ struct SubtitleOverlayView: View {
     @AppStorage(OverlaySettingsKey.showTranslation)
     private var showTranslation = true
 
+    @AppStorage(AppLanguage.defaultsKey)
+    private var appLanguageRaw = AppLanguage.system.rawValue
+
     @Environment(\.accessibilityReduceTransparency)
     private var reduceTransparency
 
@@ -30,6 +33,7 @@ struct SubtitleOverlayView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilityText)
             .accessibilityAddTraits(.updatesFrequently)
+            .appLanguage(appLanguageRaw)
     }
 
     // MARK: - Caption content
@@ -77,11 +81,11 @@ struct SubtitleOverlayView: View {
         return translation
     }
 
-    private var idleText: String {
+    private var idleText: LocalizedStringKey {
         switch store.sessionState {
-        case .idle: String(localized: "Captions paused")
-        case .preparing: String(localized: "Preparing…")
-        default: String(localized: "Listening…")
+        case .idle: "Captions paused"
+        case .preparing: "Preparing…"
+        default: "Listening…"
         }
     }
 
