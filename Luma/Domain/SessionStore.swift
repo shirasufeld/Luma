@@ -19,6 +19,8 @@ final class SessionStore {
     private(set) var latency: TimeInterval?
     /// Locale actually used by the transcriber after resolution.
     private(set) var resolvedTranscriptionLocale: Locale?
+    /// Whether the active language pair can translate (and if not, why).
+    private(set) var translationAvailability: TranslationAvailability?
 
     // User configuration.
     var languagePair: LanguagePair = .default
@@ -50,6 +52,10 @@ final class SessionStore {
 
     func transcriptionDidResolve(locale: Locale) {
         resolvedTranscriptionLocale = locale
+    }
+
+    func translationAvailabilityChanged(_ availability: TranslationAvailability) {
+        translationAvailability = availability
     }
 
     func applyVolatile(text: AttributedString, range: CMTimeRange, latency: TimeInterval?) {

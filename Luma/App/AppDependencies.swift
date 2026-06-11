@@ -12,6 +12,7 @@ final class AppDependencies {
     init(
         capabilities: any CapabilityChecking = CapabilityService(),
         transcription: (any TranscriptionProviding)? = nil,
+        translation: (any TranslationProviding)? = nil,
         audioProviderFactory: (@Sendable (AudioInputKind) -> any AudioInputProviding)? = nil
     ) {
         self.capabilities = capabilities
@@ -21,6 +22,7 @@ final class AppDependencies {
             store: store,
             capabilities: capabilities,
             transcription: transcription ?? SpeechAnalyzerTranscriber(),
+            translation: translation ?? AppleTranslationProvider(),
             audioProviderFactory: audioProviderFactory ?? { kind in
                 switch kind {
                 case .microphone:

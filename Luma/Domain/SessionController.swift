@@ -8,11 +8,18 @@ actor SessionController {
     private let store: SessionStore
     private let capabilities: any CapabilityChecking
     private let transcription: any TranscriptionProviding
+    private let translation: any TranslationProviding
     private let audioProviderFactory: @Sendable (AudioInputKind) -> any AudioInputProviding
 
     private var audioProvider: (any AudioInputProviding)?
     private var eventTask: Task<Void, Never>?
     private var state: SessionState = .idle
+
+    // Translation runs on its own serial queue so slow translations never
+    // stall the transcript event loop.
+    private var translationReady = false
+    private var translationQueue: AsyncStream<TranscriptSegment>.Continuation?
+    private var translationWorker: Task<Void, Never>?
 
     // Latency estimation: wall-clock anchor of audio time zero, with pauses
     // subtracted so the audio timeline and wall clock stay comparable.
@@ -24,11 +31,13 @@ actor SessionController {
         store: SessionStore,
         capabilities: any CapabilityChecking,
         transcription: any TranscriptionProviding,
+        translation: any TranslationProviding,
         audioProviderFactory: @escaping @Sendable (AudioInputKind) -> any AudioInputProviding
     ) {
         self.store = store
         self.capabilities = capabilities
         self.transcription = transcription
+        self.translation = translation
         self.audioProviderFactory = audioProviderFactory
     }
 
@@ -58,6 +67,15 @@ actor SessionController {
                 }
             }
             await store.transcriptionDidResolve(locale: resolved)
+
+            let availability = await translation.setLanguagePair(
+                source: languagePair.translationSource,
+                target: languagePair.translationTarget)
+            translationReady = availability == .installed
+            await store.translationAvailabilityChanged(availability)
+            if translationReady {
+                startTranslationWorker()
+            }
 
             let provider = audioProviderFactory(inputKind)
             audioProvider = provider
@@ -117,6 +135,12 @@ actor SessionController {
         _ = await eventTask?.value
         eventTask = nil
 
+        // Then let queued translations finish.
+        translationQueue?.finish()
+        translationQueue = nil
+        _ = await translationWorker?.value
+        translationWorker = nil
+
         state = .idle
         await store.sessionStateChanged(.idle)
     }
@@ -147,10 +171,35 @@ actor SessionController {
         }
     }
 
-    /// Translation hook; wired to a TranslationProviding implementation in
-    /// the translation milestone.
     private func translateIfPossible(_ segment: TranscriptSegment) async {
-        await store.applyTranslation(segmentID: segment.id, state: .unavailable)
+        guard translationReady, let translationQueue else {
+            await store.applyTranslation(segmentID: segment.id, state: .unavailable)
+            return
+        }
+        translationQueue.yield(segment)
+    }
+
+    private func startTranslationWorker() {
+        let (queue, continuation) = AsyncStream.makeStream(
+            of: TranscriptSegment.self, bufferingPolicy: .unbounded)
+        translationQueue = continuation
+        translationWorker = Task {
+            await self.runTranslationWorker(queue: queue)
+        }
+    }
+
+    private func runTranslationWorker(queue: AsyncStream<TranscriptSegment>) async {
+        for await segment in queue {
+            do {
+                let translated = try await translation.translate(segment.plainText)
+                await store.applyTranslation(segmentID: segment.id, state: .translated(translated))
+            } catch is CancellationError {
+                break
+            } catch {
+                await store.applyTranslation(
+                    segmentID: segment.id, state: .failed(error.localizedDescription))
+            }
+        }
     }
 
     private func estimatedLatency(toAudioEnd end: CMTime) -> TimeInterval? {
@@ -166,6 +215,10 @@ actor SessionController {
         await transcription.cancel()
         eventTask?.cancel()
         eventTask = nil
+        translationQueue?.finish()
+        translationQueue = nil
+        translationWorker?.cancel()
+        translationWorker = nil
         state = .idle
         await store.sessionFailed(Self.message(for: error))
     }

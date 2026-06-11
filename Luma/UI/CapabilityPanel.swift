@@ -9,6 +9,7 @@ struct CapabilityPanel: View {
 
     @State private var snapshot = CapabilitySnapshot()
     @State private var isLoading = true
+    @State private var isDownloadingTranslation = false
 
     var body: some View {
         Form {
@@ -25,12 +26,29 @@ struct CapabilityPanel: View {
                     "Translation (\(languagePair.translationSource.minimalIdentifier) → \(languagePair.translationTarget.minimalIdentifier))",
                     status: translationLabel(snapshot.translation)
                 )
+                if snapshot.translation == .supported {
+                    Button("Download Translation Models…") {
+                        isDownloadingTranslation = true
+                    }
+                    .disabled(isDownloadingTranslation)
+                }
             }
         }
         .formStyle(.grouped)
         .overlay {
             if isLoading {
                 ProgressView()
+            }
+        }
+        .background {
+            if isDownloadingTranslation {
+                TranslationDownloadBridge(
+                    source: languagePair.translationSource,
+                    target: languagePair.translationTarget
+                ) { _ in
+                    isDownloadingTranslation = false
+                    Task { await refresh() }
+                }
             }
         }
         .task {
