@@ -32,7 +32,7 @@ struct TranscriptSessionView: View {
 
                 if let overlay {
                     Toggle(
-                        "Overlay", systemImage: "rectangle.inset.bottomright.filled",
+                        "Overlay", systemImage: "captions.bubble",
                         isOn: Binding(
                             get: { overlay.isVisible },
                             set: { _ in overlay.toggle() }
@@ -46,8 +46,14 @@ struct TranscriptSessionView: View {
                         Button("Plain Text…") { export(.text) }
                         Button("SRT Subtitles…") { export(.srt) }
                     }
+                    .menuIndicator(.hidden)
                     .disabled(store.entries.isEmpty)
                 }
+
+                SettingsLink {
+                    Label("Settings", systemImage: "gearshape")
+                }
+                .help("Open Settings")
             }
         }
         .alert(
@@ -68,7 +74,7 @@ struct TranscriptSessionView: View {
     private var controlButtons: some View {
         switch store.sessionState {
         case .idle:
-            Button("Start", systemImage: "record.circle") {
+            Button("Start", systemImage: "play.circle") {
                 let pair = store.languagePair
                 let kind = store.inputKind
                 Task { await session.start(languagePair: pair, inputKind: kind) }
@@ -172,8 +178,10 @@ struct TranscriptSessionView: View {
     private var statusBar: some View {
         HStack(spacing: 16) {
             Label(sessionLabel, systemImage: sessionSymbol)
-            Label(modelLabel, systemImage: "brain")
-            if let latency = store.latency {
+            Label(modelLabel, systemImage: modelSymbol)
+            if let latency = store.latency,
+                store.sessionState == .running || store.sessionState == .paused
+            {
                 Label(String(format: "%.1f s", latency), systemImage: "timer")
                     .monospacedDigit()
             }
@@ -208,6 +216,15 @@ struct TranscriptSessionView: View {
         case .running: "waveform"
         case .paused: "pause"
         default: "circle"
+        }
+    }
+
+    private var modelSymbol: String {
+        switch store.modelState {
+        case nil, .checking: "magnifyingglass.circle"
+        case .downloading: "arrow.down.circle"
+        case .ready: "checkmark.circle"
+        case .failed: "exclamationmark.triangle"
         }
     }
 

@@ -15,7 +15,8 @@ struct SettingsView: View {
                 OverlaySettingsView()
             }
         }
-        .frame(width: 460, height: 360)
+        .frame(width: 460, height: 380)
+        .navigationTitle("Settings")
     }
 }
 

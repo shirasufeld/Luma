@@ -36,6 +36,7 @@ final class SessionStore {
         switch state {
         case .idle, .stopping:
             audioInput = .idle
+            latency = nil
         case .running:
             audioInput = .capturing(inputKind)
             errorMessage = nil
