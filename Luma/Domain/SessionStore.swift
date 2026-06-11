@@ -2,6 +2,8 @@ import CoreMedia
 import Foundation
 import Observation
 
+private nonisolated let translationModeDefaultsKey = "translation.mode"
+
 /// Single source of truth for everything the UI shows. Mutated only on the
 /// main actor; the session controller hops here to publish updates.
 @MainActor
@@ -25,6 +27,15 @@ final class SessionStore {
     // User configuration.
     var languagePair: LanguagePair = .default
     var inputKind: AudioInputKind = .microphone
+    var translationMode: TranslationMode =
+        UserDefaults.standard.string(forKey: translationModeDefaultsKey)
+        .flatMap(TranslationMode.init(rawValue:)) ?? .realtime
+    {
+        didSet {
+            UserDefaults.standard.set(
+                translationMode.rawValue, forKey: translationModeDefaultsKey)
+        }
+    }
 
     var entries: [SubtitleEntry] { buffer.entries }
     var volatileText: AttributedString? { buffer.volatileText }

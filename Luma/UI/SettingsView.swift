@@ -11,11 +11,14 @@ struct SettingsView: View {
             Tab("General", systemImage: "gearshape") {
                 GeneralSettingsView(store: store, capabilities: capabilities)
             }
+            Tab("Appearance", systemImage: "paintpalette") {
+                AppearanceSettingsView()
+            }
             Tab("Overlay", systemImage: "captions.bubble") {
                 OverlaySettingsView()
             }
         }
-        .frame(width: 460, height: 380)
+        .frame(width: 460, height: 400)
         .navigationTitle("Settings")
     }
 }
@@ -48,6 +51,17 @@ private struct GeneralSettingsView: View {
                     Text("Microphone").tag(AudioInputKind.microphone)
                     Text("System Audio").tag(AudioInputKind.systemAudio)
                 }
+            }
+            Section("Translation") {
+                Picker("Mode", selection: $store.translationMode) {
+                    Text("Accurate (slower)").tag(TranslationMode.accurate)
+                    Text("Realtime (faster)").tag(TranslationMode.realtime)
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+                Text("Accurate favors sentence quality; Realtime favors lower latency. Takes effect on the next start.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             }
             if !isSessionIdle {
                 Text("Stop the session to change languages or input.")
@@ -104,6 +118,59 @@ private struct GeneralSettingsView: View {
     private func displayName(forLanguage language: Locale.Language) -> String {
         let identifier = language.minimalIdentifier
         return Locale.current.localizedString(forIdentifier: identifier) ?? identifier
+    }
+}
+
+private struct AppearanceSettingsView: View {
+    @AppStorage(AppearanceSettingsKey.transcriptFontSize)
+    private var transcriptFontSize: Double = AppearanceSettingsKey.defaultTranscriptFontSize
+    @AppStorage(AppearanceSettingsKey.accentHex)
+    private var accentHex = ""
+
+    var body: some View {
+        Form {
+            Section("Transcript Text") {
+                LabeledContent("Size") {
+                    HStack {
+                        Slider(value: $transcriptFontSize, in: 11...24, step: 1) {
+                            Text("Size")
+                        }
+                        .labelsHidden()
+                        .frame(width: 180)
+                        Text("\(Int(transcriptFontSize)) pt")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Text("Sample transcript line")
+                    .font(.system(size: transcriptFontSize))
+            }
+            Section("Accent Color") {
+                LabeledContent("Translation highlight") {
+                    ColorPicker(
+                        "Translation highlight", selection: accentBinding,
+                        supportsOpacity: false
+                    )
+                    .labelsHidden()
+                }
+                Text("Sample translated line")
+                    .font(.system(size: transcriptFontSize))
+                    .foregroundStyle(accentBinding.wrappedValue)
+                Button("Use System Accent") {
+                    accentHex = ""
+                }
+                .disabled(accentHex.isEmpty)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private var accentBinding: Binding<Color> {
+        Binding {
+            Color(hexString: accentHex) ?? .accentColor
+        } set: { newColor in
+            accentHex = newColor.hexString ?? ""
+        }
     }
 }
 

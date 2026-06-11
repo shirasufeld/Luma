@@ -3,6 +3,9 @@ import SwiftUI
 struct ContentView: View {
     let dependencies: AppDependencies
 
+    @AppStorage(AppearanceSettingsKey.accentHex)
+    private var accentHex = ""
+
     var body: some View {
         TabView {
             Tab("Session", systemImage: "captions.bubble") {
@@ -20,5 +23,6 @@ struct ContentView: View {
         }
         .frame(minWidth: 560, minHeight: 400)
         .navigationTitle("Luma")
+        .tint(Color(hexString: accentHex) ?? .accentColor)
     }
 }

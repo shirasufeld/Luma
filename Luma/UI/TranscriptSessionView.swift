@@ -11,6 +11,9 @@ struct TranscriptSessionView: View {
 
     @State private var exportError: String?
 
+    @AppStorage(AppearanceSettingsKey.transcriptFontSize)
+    private var transcriptFontSize: Double = AppearanceSettingsKey.defaultTranscriptFontSize
+
     var body: some View {
         VStack(spacing: 0) {
             transcriptList
@@ -77,7 +80,11 @@ struct TranscriptSessionView: View {
             Button("Start", systemImage: "play.circle") {
                 let pair = store.languagePair
                 let kind = store.inputKind
-                Task { await session.start(languagePair: pair, inputKind: kind) }
+                let mode = store.translationMode
+                Task {
+                    await session.start(
+                        languagePair: pair, inputKind: kind, translationMode: mode)
+                }
             }
         case .running:
             Button("Pause", systemImage: "pause.circle") {
@@ -129,6 +136,7 @@ struct TranscriptSessionView: View {
                     }
                     if let volatileText = store.volatileText {
                         Text(volatileText)
+                            .font(.system(size: transcriptFontSize))
                             .foregroundStyle(.secondary)
                             .italic()
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -153,9 +161,11 @@ struct TranscriptSessionView: View {
     private func entryRow(_ entry: SubtitleEntry) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(entry.segment.plainText)
+                .font(.system(size: transcriptFontSize))
             switch entry.translation {
             case .translated(let translation):
                 Text(translation)
+                    .font(.system(size: transcriptFontSize))
                     .foregroundStyle(.tint)
             case .pending:
                 Text("Translating…")

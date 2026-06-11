@@ -13,9 +13,10 @@ actor AppleTranslationProvider: TranslationProviding {
 
     func setLanguagePair(
         source: Locale.Language,
-        target: Locale.Language
+        target: Locale.Language,
+        mode: TranslationMode
     ) async -> TranslationAvailability {
-        availability = await engine.configure(source: source, target: target)
+        availability = await engine.configure(source: source, target: target, mode: mode)
         return availability
     }
 
@@ -37,22 +38,26 @@ actor AppleTranslationProvider: TranslationProviding {
 private nonisolated final class TranslationEngine: @unchecked Sendable {
     private var session: TranslationSession?
     private var configuredPair: (source: Locale.Language, target: Locale.Language)?
+    private var configuredMode: TranslationMode?
 
     @concurrent
     func configure(
         source: Locale.Language,
-        target: Locale.Language
+        target: Locale.Language,
+        mode: TranslationMode
     ) async -> TranslationAvailability {
         switch await LanguageAvailability().status(from: source, to: target) {
         case .installed:
-            let pairUnchanged =
+            let configurationUnchanged =
                 configuredPair.map { $0.source == source && $0.target == target } ?? false
-            if session == nil || !pairUnchanged {
-                let session = Self.makeSession(source: source, target: target)
+                && configuredMode == mode
+            if session == nil || !configurationUnchanged {
+                let session = Self.makeSession(source: source, target: target, mode: mode)
                 // Warm the models so the first caption translates quickly.
                 try? await session.prepareTranslation()
                 self.session = session
                 configuredPair = (source, target)
+                configuredMode = mode
             }
             return .installed
         case .supported:
@@ -80,12 +85,20 @@ private nonisolated final class TranslationEngine: @unchecked Sendable {
 
     private static func makeSession(
         source: Locale.Language,
-        target: Locale.Language
+        target: Locale.Language,
+        mode: TranslationMode
     ) -> TranslationSession {
         if #available(macOS 26.4, *) {
-            TranslationSession(installedSource: source, target: target, preferredStrategy: .lowLatency)
+            let strategy: TranslationSession.Strategy =
+                switch mode {
+                case .accurate: .highFidelity
+                case .realtime: .lowLatency
+                }
+            return TranslationSession(
+                installedSource: source, target: target, preferredStrategy: strategy)
         } else {
-            TranslationSession(installedSource: source, target: target)
+            // Strategies need macOS 26.4+; earlier systems use the default.
+            return TranslationSession(installedSource: source, target: target)
         }
     }
 }

@@ -98,7 +98,7 @@ actor MockTranslator: TranslationProviding {
     }
 
     func setLanguagePair(
-        source: Locale.Language, target: Locale.Language
+        source: Locale.Language, target: Locale.Language, mode: TranslationMode
     ) async -> TranslationAvailability { availability }
 
     func translate(_ text: String) async throws -> String { "«\(text)»" }

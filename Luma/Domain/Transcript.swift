@@ -46,6 +46,16 @@ nonisolated enum TranscriptionModelState: Sendable, Equatable {
     case failed(String)
 }
 
+/// Trade-off preset for live translation.
+nonisolated enum TranslationMode: String, Sendable, CaseIterable, Identifiable {
+    /// Slower, sentence-accurate output (high-fidelity models when available).
+    case accurate
+    /// Lower-latency output using the faster traditional models.
+    case realtime
+
+    var id: String { rawValue }
+}
+
 /// Errors surfaced by the transcription pipeline.
 nonisolated enum TranscriptionError: Error, Equatable {
     case unavailableOnDevice

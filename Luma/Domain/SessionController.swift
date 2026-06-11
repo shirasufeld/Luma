@@ -43,7 +43,11 @@ actor SessionController {
 
     // MARK: - Controls
 
-    func start(languagePair: LanguagePair, inputKind: AudioInputKind) async {
+    func start(
+        languagePair: LanguagePair,
+        inputKind: AudioInputKind,
+        translationMode: TranslationMode = .realtime
+    ) async {
         guard state == .idle else { return }
         state = .preparing
         await store.sessionStateChanged(.preparing)
@@ -70,7 +74,8 @@ actor SessionController {
 
             let availability = await translation.setLanguagePair(
                 source: languagePair.translationSource,
-                target: languagePair.translationTarget)
+                target: languagePair.translationTarget,
+                mode: translationMode)
             translationReady = availability == .installed
             await store.translationAvailabilityChanged(availability)
             if translationReady {
