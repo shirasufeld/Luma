@@ -9,7 +9,8 @@ struct ContentView: View {
                 TranscriptSessionView(
                     store: dependencies.store,
                     session: dependencies.session,
-                    overlay: dependencies.overlay)
+                    overlay: dependencies.overlay,
+                    exporter: dependencies.exporter)
             }
             Tab("Diagnostics", systemImage: "checklist") {
                 CapabilityPanel(

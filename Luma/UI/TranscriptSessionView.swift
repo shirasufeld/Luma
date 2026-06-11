@@ -7,6 +7,9 @@ struct TranscriptSessionView: View {
     @Bindable var store: SessionStore
     let session: SessionController
     var overlay: SubtitleOverlayController?
+    var exporter: (any TranscriptExporting)?
+
+    @State private var exportError: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,7 +40,25 @@ struct TranscriptSessionView: View {
                     )
                     .help("Show or hide the floating caption window")
                 }
+
+                if exporter != nil {
+                    Menu("Export", systemImage: "square.and.arrow.up") {
+                        Button("Plain Text…") { export(.text) }
+                        Button("SRT Subtitles…") { export(.srt) }
+                    }
+                    .disabled(store.entries.isEmpty)
+                }
             }
+        }
+        .alert(
+            "Export Failed",
+            isPresented: .init(
+                get: { exportError != nil },
+                set: { if !$0 { exportError = nil } })
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(exportError ?? "")
         }
     }
 
@@ -71,6 +92,18 @@ struct TranscriptSessionView: View {
             Task { await session.clearTranscript() }
         }
         .disabled(store.entries.isEmpty && store.volatileText == nil)
+    }
+
+    private func export(_ format: TranscriptExportFormat) {
+        guard let exporter else { return }
+        let entries = store.entries
+        Task {
+            do {
+                _ = try await exporter.export(entries: entries, format: format)
+            } catch {
+                exportError = error.localizedDescription
+            }
+        }
     }
 
     private var stopButton: some View {

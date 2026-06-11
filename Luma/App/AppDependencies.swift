@@ -9,6 +9,7 @@ final class AppDependencies {
     let store: SessionStore
     let session: SessionController
     let overlay: SubtitleOverlayController
+    let exporter: any TranscriptExporting
 
     init(
         capabilities: any CapabilityChecking = CapabilityService(),
@@ -20,6 +21,7 @@ final class AppDependencies {
         let store = SessionStore()
         self.store = store
         self.overlay = SubtitleOverlayController(store: store)
+        self.exporter = TranscriptExportService()
         self.session = SessionController(
             store: store,
             capabilities: capabilities,
