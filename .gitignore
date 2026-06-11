@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+
+# Xcode build artifacts
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Signing & private configuration
+*.p12
+*.mobileprovision
+*.provisionprofile
+*.certSigningRequest
+
+# Logs & temp
+*.log
+.tmp/
+
+# Reference project (requirements reference only, not part of this repo)
+reference/
