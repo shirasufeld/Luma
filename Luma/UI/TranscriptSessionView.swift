@@ -15,6 +15,15 @@ struct TranscriptSessionView: View {
         }
         .toolbar {
             ToolbarItemGroup {
+                Picker("Input", selection: $store.inputKind) {
+                    Label("Microphone", systemImage: "microphone")
+                        .tag(AudioInputKind.microphone)
+                    Label("System Audio", systemImage: "speaker.wave.2")
+                        .tag(AudioInputKind.systemAudio)
+                }
+                .pickerStyle(.segmented)
+                .disabled(store.sessionState != .idle)
+
                 controlButtons
             }
         }

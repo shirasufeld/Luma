@@ -28,9 +28,7 @@ final class AppDependencies {
                 case .microphone:
                     MicrophoneAudioProvider()
                 case .systemAudio:
-                    // System audio capture lands with the Core Audio tap
-                    // provider milestone; the mic is the safe stand-in.
-                    MicrophoneAudioProvider()
+                    SystemAudioTapProvider()
                 }
             }
         )
