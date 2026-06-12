@@ -18,8 +18,16 @@ actor SessionController {
     // Translation runs on its own serial queue so slow translations never
     // stall the transcript event loop.
     private var translationReady = false
+    private var translationMode: TranslationMode = .balanced
     private var translationQueue: AsyncStream<TranscriptSegment>.Continuation?
     private var translationWorker: Task<Void, Never>?
+
+    // Fast mode: the volatile hypothesis is re-translated as it changes.
+    // `bufferingNewest(1)` conflates updates to the latest snapshot, and the
+    // worker sleeps briefly between requests, which bounds resource use no
+    // matter how fast the transcriber refreshes.
+    private var volatileTranslationQueue: AsyncStream<String>.Continuation?
+    private var volatileTranslationWorker: Task<Void, Never>?
 
     // Latency estimation: wall-clock anchor of audio time zero, with pauses
     // subtracted so the audio timeline and wall clock stay comparable.
@@ -46,7 +54,7 @@ actor SessionController {
     func start(
         languagePair: LanguagePair,
         inputKind: AudioInputKind,
-        translationMode: TranslationMode = .realtime
+        translationMode: TranslationMode = .balanced
     ) async {
         guard state == .idle else { return }
         state = .preparing
@@ -77,9 +85,13 @@ actor SessionController {
                 target: languagePair.translationTarget,
                 mode: translationMode)
             translationReady = availability == .installed
+            self.translationMode = translationMode
             await store.translationAvailabilityChanged(availability)
             if translationReady {
                 startTranslationWorker()
+                if translationMode.translatesVolatileText {
+                    startVolatileTranslationWorker()
+                }
             }
 
             let provider = audioProviderFactory(inputKind)
@@ -140,7 +152,12 @@ actor SessionController {
         _ = await eventTask?.value
         eventTask = nil
 
-        // Then let queued translations finish.
+        // Then let queued translations finish; live volatile translation
+        // just stops.
+        volatileTranslationQueue?.finish()
+        volatileTranslationQueue = nil
+        volatileTranslationWorker?.cancel()
+        volatileTranslationWorker = nil
         translationQueue?.finish()
         translationQueue = nil
         _ = await translationWorker?.value
@@ -163,6 +180,13 @@ actor SessionController {
                 case .volatile(let text, let range):
                     await store.applyVolatile(
                         text: text, range: range, latency: estimatedLatency(toAudioEnd: range.end))
+                    if let volatileTranslationQueue {
+                        let plain = String(text.characters)
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        if plain.count >= 2 {
+                            volatileTranslationQueue.yield(plain)
+                        }
+                    }
                 case .finalized(let segment):
                     let appended = await store.applyFinalized(
                         segment, latency: estimatedLatency(toAudioEnd: segment.range.end))
@@ -190,6 +214,29 @@ actor SessionController {
         translationQueue = continuation
         translationWorker = Task {
             await self.runTranslationWorker(queue: queue)
+        }
+    }
+
+    private func startVolatileTranslationWorker() {
+        let (queue, continuation) = AsyncStream.makeStream(
+            of: String.self, bufferingPolicy: .bufferingNewest(1))
+        volatileTranslationQueue = continuation
+        volatileTranslationWorker = Task {
+            await self.runVolatileTranslationWorker(queue: queue)
+        }
+    }
+
+    private func runVolatileTranslationWorker(queue: AsyncStream<String>) async {
+        var lastTranslated = ""
+        for await text in queue {
+            if Task.isCancelled { break }
+            guard text != lastTranslated else { continue }
+            if let translated = try? await translation.translate(text) {
+                lastTranslated = text
+                await store.applyVolatileTranslation(translated)
+            }
+            // Pace requests; newer snapshots conflate in the buffer meanwhile.
+            try? await Task.sleep(for: .milliseconds(250))
         }
     }
 
@@ -224,6 +271,10 @@ actor SessionController {
         translationQueue = nil
         translationWorker?.cancel()
         translationWorker = nil
+        volatileTranslationQueue?.finish()
+        volatileTranslationQueue = nil
+        volatileTranslationWorker?.cancel()
+        volatileTranslationWorker = nil
         state = .idle
         await store.sessionFailed(Self.message(for: error))
     }

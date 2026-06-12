@@ -23,13 +23,15 @@ final class SessionStore {
     private(set) var resolvedTranscriptionLocale: Locale?
     /// Whether the active language pair can translate (and if not, why).
     private(set) var translationAvailability: TranslationAvailability?
+    /// Live translation of the volatile hypothesis (fast mode only).
+    private(set) var volatileTranslation: String?
 
     // User configuration.
     var languagePair: LanguagePair = .default
     var inputKind: AudioInputKind = .microphone
     var translationMode: TranslationMode =
         UserDefaults.standard.string(forKey: translationModeDefaultsKey)
-        .flatMap(TranslationMode.init(rawValue:)) ?? .realtime
+        .flatMap(TranslationMode.init(rawValue:)) ?? .balanced
     {
         didSet {
             UserDefaults.standard.set(
@@ -79,8 +81,17 @@ final class SessionStore {
     @discardableResult
     func applyFinalized(_ segment: TranscriptSegment, latency: TimeInterval?) -> Bool {
         let appended = buffer.applyFinalized(segment)
+        // The finalized line supersedes the volatile hypothesis and its
+        // live translation.
+        volatileTranslation = nil
         if let latency { self.latency = latency }
         return appended
+    }
+
+    func applyVolatileTranslation(_ text: String?) {
+        // Only meaningful while a volatile line is on screen.
+        guard text == nil || buffer.volatileText != nil else { return }
+        volatileTranslation = text
     }
 
     func applyTranslation(segmentID: UUID, state: TranslationState) {
@@ -95,6 +106,7 @@ final class SessionStore {
 
     func clearTranscript() {
         buffer.clear()
+        volatileTranslation = nil
         latency = nil
     }
 }

@@ -75,6 +75,11 @@ struct SubtitleOverlayView: View {
     }
 
     private var translationLine: String {
+        // Fast mode live-translates the in-progress line; prefer that while
+        // a volatile hypothesis is showing.
+        if store.volatileText != nil, let volatileTranslation = store.volatileTranslation {
+            return volatileTranslation
+        }
         guard case .translated(let translation) = store.entries.last?.translation else {
             return ""
         }

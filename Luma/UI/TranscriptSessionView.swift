@@ -50,6 +50,9 @@ struct TranscriptSessionView: View {
                         Button("SRT Subtitles…") { export(.srt) }
                     }
                     .menuIndicator(.hidden)
+                    // Match the neutral monochrome of the other toolbar
+                    // buttons instead of the app accent.
+                    .tint(.primary)
                     .disabled(store.entries.isEmpty)
                 }
 
@@ -135,12 +138,20 @@ struct TranscriptSessionView: View {
                         entryRow(entry)
                     }
                     if let volatileText = store.volatileText {
-                        Text(volatileText)
-                            .font(.system(size: transcriptFontSize))
-                            .foregroundStyle(.secondary)
-                            .italic()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .id("volatile")
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(volatileText)
+                                .font(.system(size: transcriptFontSize))
+                                .foregroundStyle(.secondary)
+                                .italic()
+                            if let volatileTranslation = store.volatileTranslation {
+                                Text(volatileTranslation)
+                                    .font(.system(size: transcriptFontSize))
+                                    .foregroundStyle(.tint.opacity(0.7))
+                                    .italic()
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .id("volatile")
                     }
                 }
                 .padding()

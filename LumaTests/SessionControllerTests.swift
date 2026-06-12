@@ -84,6 +84,35 @@ struct SessionControllerTests {
         await controller.stop()
     }
 
+    @Test func fastModeTranslatesVolatileText() async {
+        let range = makeSegment("x", start: 0, end: 1).range
+        let (store, controller) = makeController(events: [
+            .volatile(text: AttributedString("hello there"), range: range)
+        ])
+
+        await controller.start(
+            languagePair: .default, inputKind: .microphone, translationMode: .fast)
+        let delivered = await waitUntil {
+            store.volatileTranslation == "«hello there»"
+        }
+        #expect(delivered, "fast mode should live-translate the volatile line")
+        await controller.stop()
+    }
+
+    @Test func balancedModeDoesNotTranslateVolatileText() async {
+        let range = makeSegment("x", start: 0, end: 1).range
+        let (store, controller) = makeController(events: [
+            .volatile(text: AttributedString("hello there"), range: range)
+        ])
+
+        await controller.start(
+            languagePair: .default, inputKind: .microphone, translationMode: .balanced)
+        // Give the pipeline a moment; no volatile translation may appear.
+        _ = await waitUntil(timeout: .milliseconds(300)) { false }
+        #expect(store.volatileTranslation == nil)
+        await controller.stop()
+    }
+
     @Test func startIsIgnoredWhileRunning() async {
         let (store, controller) = makeController(events: [])
         await controller.start(languagePair: .default, inputKind: .microphone)

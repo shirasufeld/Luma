@@ -75,16 +75,18 @@ private struct GeneralSettingsView: View {
             .disabled(!isSessionIdle)
             Section("Translation") {
                 Picker("Mode", selection: $store.translationMode) {
-                    Text("Accurate (slower)").tag(TranslationMode.accurate)
-                    Text("Realtime (faster)").tag(TranslationMode.realtime)
+                    Text("Fast").tag(TranslationMode.fast)
+                    Text("Balanced").tag(TranslationMode.balanced)
+                    Text("Accurate").tag(TranslationMode.accurate)
                 }
-                .pickerStyle(.inline)
+                .pickerStyle(.segmented)
                 .labelsHidden()
-                Text(
-                    "Accurate favors sentence quality; Realtime favors lower latency. Takes effect on the next start."
-                )
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                Text(translationModeDescription)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Text("Takes effect on the next start.")
+                    .font(.callout)
+                    .foregroundStyle(.tertiary)
             }
             .disabled(!isSessionIdle)
             if !isSessionIdle {
@@ -100,6 +102,17 @@ private struct GeneralSettingsView: View {
             translationLanguages = await capabilities.supportedTranslationLanguages()
                 .sorted { $0.maximalIdentifier < $1.maximalIdentifier }
             ensureCurrentValuesAreListed()
+        }
+    }
+
+    private var translationModeDescription: LocalizedStringKey {
+        switch store.translationMode {
+        case .fast:
+            "Fast: re-translates the in-progress line as it updates, using the low-latency translation model. Most responsive; higher resource use."
+        case .balanced:
+            "Balanced: translates each finalized sentence with the low-latency translation model."
+        case .accurate:
+            "Accurate: translates finalized sentences with the high-fidelity model (Apple Intelligence when available). Best quality, more latency."
         }
     }
 

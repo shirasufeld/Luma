@@ -48,12 +48,19 @@ nonisolated enum TranscriptionModelState: Sendable, Equatable {
 
 /// Trade-off preset for live translation.
 nonisolated enum TranslationMode: String, Sendable, CaseIterable, Identifiable {
-    /// Slower, sentence-accurate output (high-fidelity models when available).
+    /// Re-translates the in-progress (volatile) line as it updates, using the
+    /// low-latency model. Most responsive, highest resource use.
+    case fast
+    /// Translates each finalized sentence with the low-latency model.
+    case balanced
+    /// Translates finalized sentences with the high-fidelity model
+    /// (Apple Intelligence when available). Best quality, more latency.
     case accurate
-    /// Lower-latency output using the faster traditional models.
-    case realtime
 
     var id: String { rawValue }
+
+    /// Whether this mode live-translates the volatile hypothesis.
+    var translatesVolatileText: Bool { self == .fast }
 }
 
 /// Errors surfaced by the transcription pipeline.
