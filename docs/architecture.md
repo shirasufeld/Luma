@@ -78,10 +78,14 @@ AudioInputProviding                     TranscriptionProviding
 
 ## 翻译管线细节
 
-1. 运行期：`TranslationSession(installedSource:target:)`（macOS 26+ 程序化 init，仅限已安装语言对）。session 随语言对缓存，语言切换时重建。
-2. 仅翻译 finalized segment；按到达顺序串行 `translate(batch:)`，client ID = segment UUID，响应回填 SubtitleBuffer（去重天然由 segment ID 保证）。
-3. 模型下载：`LanguageAvailability.status == .supported`（未安装）时，UI 提示并挂载隐藏 `TranslationDownloadBridge` view（`.translationTask` + `prepareTranslation()`）触发系统下载流程；完成后切回程序化 session。
-4. 不可用语言对：字幕回退为原文 + 状态栏明示。
+1. 运行期：`TranslationSession(installedSource:target:)`（macOS 26+ 程序化 init，仅限已安装语言对）。session 随「语言对 + 模式」缓存，变更时重建并 `prepareTranslation()` 预热。
+2. 三档模式（`TranslationMode`）：
+   - **fast**：lowLatency 策略 + volatile 实时刷新——独立 worker 经 `bufferingNewest(1)` 流消费未定稿文本（永远只保留最新快照），相同文本跳过，每次请求后休眠 250ms 限制资源占用；定稿时实时译文被正式译文取代。
+   - **balanced**：lowLatency 策略，仅翻译 finalized segment（默认档）。
+   - **accurate**：highFidelity 策略（macOS 26.4+，可用时为 Apple Intelligence 模型），仅翻译 finalized segment。
+3. finalized 翻译按到达顺序串行处理（独立 worker，不阻塞转写事件循环），按 segment UUID 回填 SubtitleBuffer。
+4. 模型下载：`LanguageAvailability.status == .supported`（未安装）时，UI 提示并挂载隐藏 `TranslationDownloadBridge` view（`.translationTask` + `prepareTranslation()`）触发系统下载流程；完成后切回程序化 session。
+5. 不可用语言对：字幕回退为原文 + 状态栏明示。
 
 ## 字幕 overlay
 
