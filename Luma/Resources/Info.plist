@@ -6,5 +6,7 @@
 	<string>Luma transcribes speech from the microphone to show live captions.</string>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Luma captures system audio to show live captions for other apps.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
