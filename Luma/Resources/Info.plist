@@ -8,9 +8,22 @@
 	<string>Luma captures system audio to show live captions for other apps.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<!-- iOS-only: an empty UILaunchScreen opts the app into full-screen
-	     rendering on all device sizes. macOS ignores this key. -->
+	<!-- iOS-only keys below; macOS ignores them. An empty UILaunchScreen opts
+	     the app into full-screen rendering on all device sizes. -->
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
 </dict>
 </plist>
