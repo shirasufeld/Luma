@@ -64,11 +64,15 @@ struct TranscriptSessionView: View {
     private var iosControlBar: some View {
         HStack(spacing: 16) {
             controlButtons
+                .labelStyle(.iconOnly)
             Spacer()
+            // Labeled so the caption Picture in Picture control is
+            // self-explanatory rather than a bare icon switch.
             overlayToggle
+                .toggleStyle(.button)
             exportMenu
+                .labelStyle(.iconOnly)
         }
-        .labelStyle(.iconOnly)
         .font(.title3)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -92,13 +96,17 @@ struct TranscriptSessionView: View {
     private var overlayToggle: some View {
         if let overlay {
             Toggle(
-                "Overlay", systemImage: "captions.bubble",
+                "Captions", systemImage: "captions.bubble",
                 isOn: Binding(
                     get: { overlay.isVisible },
                     set: { _ in overlay.toggle() }
                 )
             )
-            .help("Show or hide the caption overlay")
+            #if os(macOS)
+            .help("Show or hide the floating caption window")
+            #else
+            .help("Show or hide captions in a Picture in Picture window")
+            #endif
         }
     }
 

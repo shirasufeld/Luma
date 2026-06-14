@@ -51,12 +51,18 @@ final class CaptionPiPController: NSObject {
         guard let pipController, !isActive else { return }
         isActive = true
         renderLoop()  // enqueue an initial frame and start observing changes
-        pipController.startPictureInPicture()
+        // PiP can only start with an active audio session. Activate one (works
+        // even before any transcription session has run), then start PiP.
+        Task {
+            await AudioSessionCoordinator.shared.setPictureInPicture(true)
+            pipController.startPictureInPicture()
+        }
     }
 
     func stop() {
         isActive = false
         pipController?.stopPictureInPicture()
+        Task { await AudioSessionCoordinator.shared.setPictureInPicture(false) }
     }
 
     // MARK: - Caption rendering
@@ -277,16 +283,20 @@ extension CaptionPiPController: AVPictureInPictureControllerDelegate {
     func pictureInPictureControllerDidStopPictureInPicture(
         _ pictureInPictureController: AVPictureInPictureController
     ) {
-        isActive = false
-        onActiveChange?(false)
+        handlePictureInPictureStopped()
     }
 
     func pictureInPictureController(
         _ pictureInPictureController: AVPictureInPictureController,
         failedToStartPictureInPictureWithError error: any Error
     ) {
+        handlePictureInPictureStopped()
+    }
+
+    private func handlePictureInPictureStopped() {
         isActive = false
         onActiveChange?(false)
+        Task { await AudioSessionCoordinator.shared.setPictureInPicture(false) }
     }
 }
 

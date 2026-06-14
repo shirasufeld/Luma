@@ -57,12 +57,12 @@ private struct GeneralSettingsView: View {
             }
             Section("Languages") {
                 Picker("Transcribe", selection: transcriptionSelection) {
-                    ForEach(transcriptionLocales, id: \.identifier) { locale in
+                    ForEach(displayedTranscriptionLocales, id: \.identifier) { locale in
                         Text(displayName(forLocale: locale)).tag(locale.identifier)
                     }
                 }
                 Picker("Translate to", selection: translationSelection) {
-                    ForEach(translationLanguages, id: \.maximalIdentifier) { language in
+                    ForEach(displayedTranslationLanguages, id: \.maximalIdentifier) { language in
                         Text(displayName(forLanguage: language)).tag(language.maximalIdentifier)
                     }
                 }
@@ -107,7 +107,6 @@ private struct GeneralSettingsView: View {
                 .sorted { $0.identifier < $1.identifier }
             translationLanguages = await capabilities.supportedTranslationLanguages()
                 .sorted { $0.maximalIdentifier < $1.maximalIdentifier }
-            ensureCurrentValuesAreListed()
         }
     }
 
@@ -122,19 +121,24 @@ private struct GeneralSettingsView: View {
         }
     }
 
-    /// The active pair may not be in the fetched lists (e.g. before lists
-    /// load, or for equivalents); keep them selectable.
-    private func ensureCurrentValuesAreListed() {
-        let currentLocale = store.languagePair.transcriptionLocale
-        if !transcriptionLocales.contains(where: { $0.identifier == currentLocale.identifier }) {
-            transcriptionLocales.insert(currentLocale, at: 0)
+    /// The active pair may not be in the fetched lists (before they load, or for
+    /// equivalents). Always include the current selection so the `Picker` has a
+    /// matching tag on every render (otherwise SwiftUI logs an invalid-selection
+    /// warning and shows undefined results).
+    private var displayedTranscriptionLocales: [Locale] {
+        let current = store.languagePair.transcriptionLocale
+        if transcriptionLocales.contains(where: { $0.identifier == current.identifier }) {
+            return transcriptionLocales
         }
-        let currentTarget = store.languagePair.translationTarget
-        if !translationLanguages.contains(where: {
-            $0.maximalIdentifier == currentTarget.maximalIdentifier
-        }) {
-            translationLanguages.insert(currentTarget, at: 0)
+        return [current] + transcriptionLocales
+    }
+
+    private var displayedTranslationLanguages: [Locale.Language] {
+        let current = store.languagePair.translationTarget
+        if translationLanguages.contains(where: { $0.maximalIdentifier == current.maximalIdentifier }) {
+            return translationLanguages
         }
+        return [current] + translationLanguages
     }
 
     private var transcriptionSelection: Binding<String> {
