@@ -352,7 +352,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UISupportedInterfaceOrientations[sdk=iphoneos*]" = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				"INFOPLIST_KEY_UISupportedInterfaceOrientations~ipad[sdk=iphoneos*]" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				ENABLE_PREVIEWS = YES;
@@ -383,7 +382,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UISupportedInterfaceOrientations[sdk=iphoneos*]" = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				"INFOPLIST_KEY_UISupportedInterfaceOrientations~ipad[sdk=iphoneos*]" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				ENABLE_PREVIEWS = YES;
