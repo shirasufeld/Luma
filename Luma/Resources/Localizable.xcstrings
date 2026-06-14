@@ -121,6 +121,17 @@
         }
       }
     },
+    "Captions" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "字幕"
+          }
+        }
+      }
+    },
     "Captions paused" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -539,17 +550,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "打开设置"
-          }
-        }
-      }
-    },
-    "Overlay" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "悬浮字幕"
           }
         }
       }
