@@ -56,10 +56,14 @@ struct TranscriptSessionView: View {
                     .disabled(store.entries.isEmpty)
                 }
 
+                #if os(macOS)
+                // macOS opens the dedicated Settings scene; iOS presents
+                // settings as a sheet from ContentView's navigation bar.
                 SettingsLink {
                     Label("Settings", systemImage: "gearshape")
                 }
                 .help("Open Settings")
+                #endif
             }
         }
         .alert(

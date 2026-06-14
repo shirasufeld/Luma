@@ -21,7 +21,9 @@ struct SettingsView: View {
                 OverlaySettingsView()
             }
         }
+        #if os(macOS)
         .frame(width: 460, height: 400)
+        #endif
         .navigationTitle("Settings")
         .appLanguage(appLanguageRaw)
     }

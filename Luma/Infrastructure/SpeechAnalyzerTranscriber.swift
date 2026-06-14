@@ -153,7 +153,7 @@ actor SpeechAnalyzerTranscriber: TranscriptionProviding {
     }
 
     private func makeConverter(analyzerFormat: AVAudioFormat) -> any PCMAnalyzerInputConverting {
-        if #available(macOS 27.0, *) {
+        if #available(macOS 27.0, iOS 27.0, *) {
             ModernAnalyzerInputConverter(analyzerFormat: analyzerFormat)
         } else {
             LegacyAnalyzerInputConverter(targetFormat: analyzerFormat)

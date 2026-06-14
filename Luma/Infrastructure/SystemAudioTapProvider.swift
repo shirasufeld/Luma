@@ -1,3 +1,4 @@
+#if os(macOS)
 import AVFAudio
 import CoreAudio
 import Foundation
@@ -269,3 +270,4 @@ private nonisolated final class TapIOHandler: @unchecked Sendable {
         continuation.yield(AudioChunk(buffer: pcm))
     }
 }
+#endif

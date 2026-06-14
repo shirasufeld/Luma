@@ -16,6 +16,15 @@ actor MicrophoneAudioProvider: AudioInputProviding {
     func start() throws -> AsyncStream<AudioChunk> {
         stopCaptureIfNeeded()
 
+        #if os(iOS)
+        // iOS requires an active audio session before the engine can tap the
+        // microphone. `.measurement` gives the cleanest, unprocessed input for
+        // speech recognition. macOS needs none of this.
+        let session = AVAudioSession.sharedInstance()
+        try session.setCategory(.record, mode: .measurement)
+        try session.setActive(true)
+        #endif
+
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
         let (stream, continuation) = AsyncStream.makeStream(
@@ -55,6 +64,9 @@ actor MicrophoneAudioProvider: AudioInputProviding {
         stopCaptureIfNeeded()
         continuation?.finish()
         continuation = nil
+        #if os(iOS)
+        try? AVAudioSession.sharedInstance().setActive(false)
+        #endif
     }
 
     private func stopCaptureIfNeeded() {

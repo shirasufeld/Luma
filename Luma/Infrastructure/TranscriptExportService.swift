@@ -1,3 +1,4 @@
+#if os(macOS)
 import AppKit
 import Foundation
 import UniformTypeIdentifiers
@@ -46,3 +47,4 @@ final class TranscriptExportService: TranscriptExporting {
         }
     }
 }
+#endif

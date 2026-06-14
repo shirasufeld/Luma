@@ -11,8 +11,8 @@ nonisolated protocol PCMAnalyzerInputConverting {
     func makeInputs(from chunk: AudioChunk) throws -> [AnalyzerInput]
 }
 
-/// macOS 27 path: the official Speech converter.
-@available(macOS 27.0, *)
+/// macOS 27 / iOS 27 path: the official Speech converter.
+@available(macOS 27.0, iOS 27.0, *)
 nonisolated final class ModernAnalyzerInputConverter: PCMAnalyzerInputConverting {
     private let converter: AnalyzerInputConverter
 

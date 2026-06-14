@@ -9,8 +9,12 @@ struct LumaApp: App {
             ContentView(dependencies: dependencies)
         }
 
+        #if os(macOS)
+        // The Settings scene is macOS-only; iOS presents settings as an in-app
+        // sheet from ContentView.
         Settings {
             SettingsView(store: dependencies.store, capabilities: dependencies.capabilities)
         }
+        #endif
     }
 }

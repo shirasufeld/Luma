@@ -1,16 +1,27 @@
+#if os(macOS)
 import AppKit
+#endif
 import SwiftUI
 
-/// AppKit bridge for the floating caption window: a borderless,
-/// non-activating panel that floats above other windows, joins all Spaces
-/// (including full-screen apps), and can be dragged or resized directly.
+/// Drives the floating caption surface.
+///
+/// On macOS this is an AppKit bridge to a borderless, non-activating `NSPanel`
+/// that floats above other windows and joins all Spaces. On iOS there is no
+/// cross-app floating window, so the controller only tracks `isVisible`; the
+/// caption surface is presented in-app by a SwiftUI modifier observing this
+/// controller (see `ContentView`).
 @MainActor
 @Observable
 final class SubtitleOverlayController {
     private let store: SessionStore
+    #if os(macOS)
     private var panel: NSPanel?
+    #endif
 
     private(set) var isVisible = false
+
+    /// The store backing the caption surface. Used by the iOS in-app overlay.
+    var captionStore: SessionStore { store }
 
     init(store: SessionStore) {
         self.store = store
@@ -25,17 +36,22 @@ final class SubtitleOverlayController {
     }
 
     func show() {
+        #if os(macOS)
         let panel = self.panel ?? makePanel()
         self.panel = panel
         panel.orderFrontRegardless()
+        #endif
         isVisible = true
     }
 
     func hide() {
+        #if os(macOS)
         panel?.orderOut(nil)
+        #endif
         isVisible = false
     }
 
+    #if os(macOS)
     private func makePanel() -> NSPanel {
         let panel = NSPanel(
             contentRect: initialFrame(),
@@ -70,4 +86,5 @@ final class SubtitleOverlayController {
             width: width,
             height: height)
     }
+    #endif
 }

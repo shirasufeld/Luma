@@ -5,6 +5,7 @@
   },
   "lineLength": 120,
   "respectsExistingLineBreaks": true,
+  "indentConditionalCompilationBlocks": false,
   "rules": {
     "AlwaysUseLowerCamelCase": true,
     "NeverForceUnwrap": false,
