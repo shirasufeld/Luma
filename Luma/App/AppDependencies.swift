@@ -45,6 +45,10 @@ final class AppDependencies {
         case .systemAudio:
             #if os(macOS)
             return SystemAudioTapProvider()
+            #elseif targetEnvironment(simulator)
+            // ScreenCaptureKit is unavailable in the iOS simulator SDK; fall
+            // back to the microphone there.
+            return MicrophoneAudioProvider()
             #else
             if #available(iOS 27.0, *) {
                 return SCStreamSystemAudioProvider()

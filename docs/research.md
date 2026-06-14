@@ -124,3 +124,23 @@
 | `TranslationSession` 程序化实例的线程/Actor 约束 | 接口未标注 isolation | 包在自有 actor 内串行使用 |
 | beta 1 的 SpeechAnalyzer 模型下载在新系统上的稳定性 | 未知 | AssetInventory 状态全程上报 UI；错误透出 |
 | `CATapMuteBehavior` 取舍（tap 时是否静音原输出） | 默认不静音 | 用默认 unmuted，后续可做选项 |
+
+## 8. iOS 通用化（iOS 26 基线 + iOS 27 系统音频）
+
+日期：2026-06-14。证据来源：`iPhoneOS27.0.sdk` / `iPhoneSimulator27.0.sdk` 的 swiftinterface 与 ObjC 头文件。
+
+- 转录/翻译核心跨平台【已验证-SDK】：`SpeechAnalyzer` / `SpeechTranscriber` / `AssetInventory` / `AnalyzerInput` 均 `@available(anyAppleOS 26, *)`；`TranslationSession`（含 `Strategy.highFidelity/.lowLatency`）、`LanguageAvailability` 在 iOS 27 SDK 存在。`#available(macOS 26.4, *)` / `#available(macOS 27.0, *)` 已补 `iOS 26.4` / `iOS 27.0`。
+- 麦克风【已验证-SDK】：`AVAudioEngine` 跨平台；iOS 启动前需 `AVAudioSession.setCategory(.record, mode: .measurement)` + `setActive(true)`。授权经 `AVCaptureDevice.authorizationStatus/requestAccess(for: .audio)`（双端可用），故 `CapabilityService` 无需改动。
+- 系统音频仅 iOS 27+【已验证-SDK】：`SCStreamConfiguration.capturesAudio` / `sampleRate` / `channelCount` / `excludesCurrentProcessAudio`、`SCStreamOutputType.audio`、`SCContentSharingPicker.presentForCurrentApplication()` 皆 `ios(27.0)`。iOS 无 `AudioHardwareCreateProcessTap` / `CATapDescription`（CoreAudio 头文件不含），故 macOS 的 process-tap 路径无法移植。
+- iOS 专属/不可用项【已验证-SDK】：`SCContentSharingPickerConfiguration.allowedPickerModes`、`SCRunningApplication`、`SCWindow`、`SCDisplay`、`SCStreamConfiguration.captureMicrophone` 均 `API_UNAVAILABLE(ios)`；picker 配置在 iOS 仅 `showsMicrophoneControl` 可用。
+- 编译期纠正的 Swift 名（device SDK 编译验证）：`SCContentSharingPicker.addObserver→add(_:)`、`removeObserver→remove(_:)`、`presentPickerForCurrentApplication()→presentForCurrentApplication()`。
+- CMSampleBuffer→PCM【已验证-SDK】：`CMSampleBuffer.withAudioBufferList(...)` + `formatDescription.audioStreamBasicDescription`，复制进新 `AVAudioPCMBuffer`（无 `bufferListNoCopy` init，沿用 macOS `TapIOHandler` 拷贝法）。
+- 并发隔离：`SCContentFilter` / `SCStream` 非 Sendable，按 `AppleTranslationProvider` 的 confinement 模式封进 nonisolated `CaptureEngine`，仅 `AsyncStream<AudioChunk>` 等 Sendable 值跨 actor；picker filter 经一次性 `@unchecked Sendable` box 交接（同 `AudioChunk` 规则）。
+- **ScreenCaptureKit 仅 device SDK，不在 simulator SDK**【已验证-SDK】：`SCStreamSystemAudioProvider` 用 `#if os(iOS) && !targetEnvironment(simulator)` 门控；simulator 与 iOS 26 回退麦克风。
+
+### 8.1 未决（需 iOS 27 真机）
+
+| 事项 | 状态 | 缓解 |
+|---|---|---|
+| `SCStream` 在 iOS 的捕获 scope（仅本 App vs 跨 App） | 未在真机验证（本机无 iOS 27 设备/运行时；simulator 为 iOS 26 且无 ScreenCaptureKit） | provider 已隔离在 `AudioInputProviding` 之后；若需跨 App 需评估 ReplayKit Broadcast Upload Extension（`RPSampleBufferTypeAudioApp`） |
+| `presentForCurrentApplication` 授权流与回调时序 | 仅编译验证 | 真机 smoke test；observer 三回调（update/cancel/fail）均一次性 resume |
