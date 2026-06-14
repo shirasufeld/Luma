@@ -66,8 +66,8 @@ final class CaptionPiPController: NSObject {
         guard isActive else { return }
         let caption = withObservationTracking {
             currentCaption()
-        } onChange: {
-            Task { @MainActor [weak self] in self?.renderLoop() }
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.renderLoop() }
         }
         enqueue(original: caption.original, translation: caption.translation)
     }
@@ -105,8 +105,11 @@ final class CaptionPiPController: NSObject {
         else { return }
         ciContext.render(image, to: pixelBuffer)
         guard let sampleBuffer = makeSampleBuffer(imageBuffer: pixelBuffer) else { return }
-        if displayLayer.status == .failed { displayLayer.flush() }
-        displayLayer.enqueue(sampleBuffer)
+        // `AVSampleBufferDisplayLayer.status/flush/enqueue` are deprecated since
+        // iOS 18 in favor of the underlying sample-buffer renderer.
+        let renderer = displayLayer.sampleBufferRenderer
+        if renderer.status == .failed { renderer.flush() }
+        renderer.enqueue(sampleBuffer)
     }
 
     private func captionImage(
