@@ -152,6 +152,11 @@ presentForCurrentApplication()` 弹出的是"仅画面 / 画面+麦克风"，`SC
 playbackDelegate:)`，`ios(15.0)`；自绘 `CVPixelBuffer` →
 `CMSampleBufferCreateReadyWithImageBuffer` → `AVSampleBufferDisplayLayer`），配
 `UIBackgroundModes=audio` + `AVAudioSession.playAndRecord/.mixWithOthers` 实现后台采集、
-不打断其他 App 播放、字幕浮于其他 App 之上。跨 App 系统级音频若未来要做，只能走
-ReplayKit Broadcast Upload Extension（独立扩展、~50MB 内存上限，设备端模型恐跑不动，
-不在当前范围）。
+不打断其他 App 播放、字幕浮于其他 App 之上。
+
+**未来 TODO（未放弃）**：跨 App 系统级音频的唯一可能路径是 ReplayKit
+**Broadcast Upload Extension**（独立扩展 + App Group，收 `RPSampleBufferTypeAudioApp`）。
+待解：扩展 ~50MB 内存上限恐跑不动设备端 `SpeechAnalyzer`+`TranslationSession`，
+需内存可行性 spike（或转写/翻译留主 App、扩展仅转发 PCM）；字幕展示可复用现有 iOS PiP。
+详见 `docs/architecture.md` §未来 TODO / 路线图。当前迭代不实现，但
+`AudioInputProviding` 协议边界已预留接入位。

@@ -3,13 +3,12 @@ import AppKit
 #endif
 import SwiftUI
 
-/// Drives the floating caption surface.
+/// Drives the floating caption surface, using each platform's native idiom.
 ///
 /// On macOS this is an AppKit bridge to a borderless, non-activating `NSPanel`
 /// that floats above other windows and joins all Spaces. On iOS there is no
-/// cross-app floating window, so the controller only tracks `isVisible`; the
-/// caption surface is presented in-app by a SwiftUI modifier observing this
-/// controller (see `ContentView`).
+/// cross-app floating window, so captions float via Picture in Picture instead
+/// (see `CaptionPiPController`). `isVisible` reflects whichever surface is up.
 @MainActor
 @Observable
 final class SubtitleOverlayController {
@@ -21,9 +20,6 @@ final class SubtitleOverlayController {
     #endif
 
     private(set) var isVisible = false
-
-    /// The store backing the caption surface. Used by the iOS in-app overlay.
-    var captionStore: SessionStore { store }
 
     init(store: SessionStore) {
         self.store = store

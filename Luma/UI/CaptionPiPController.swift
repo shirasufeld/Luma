@@ -48,7 +48,7 @@ final class CaptionPiPController: NSObject {
     }
 
     func start() {
-        guard let pipController else { return }
+        guard let pipController, !isActive else { return }
         isActive = true
         renderLoop()  // enqueue an initial frame and start observing changes
         pipController.startPictureInPicture()
@@ -94,8 +94,14 @@ final class CaptionPiPController: NSObject {
     }
 
     private func enqueue(original: String, translation: String) {
+        // Honor the shared overlay settings (the same ones the macOS NSPanel
+        // uses) so the Settings → Overlay controls also affect the PiP window.
+        let shownOriginal = settingShowOriginal ? original : ""
+        let shownTranslation = settingShowTranslation ? translation : ""
         guard let pixelBuffer = makePixelBuffer(size: renderSize),
-            let image = captionImage(original: original, translation: translation, size: renderSize)
+            let image = captionImage(
+                original: shownOriginal, translation: shownTranslation,
+                fontSize: settingFontSize, size: renderSize)
         else { return }
         ciContext.render(image, to: pixelBuffer)
         guard let sampleBuffer = makeSampleBuffer(imageBuffer: pixelBuffer) else { return }
@@ -103,7 +109,9 @@ final class CaptionPiPController: NSObject {
         displayLayer.enqueue(sampleBuffer)
     }
 
-    private func captionImage(original: String, translation: String, size: CGSize) -> CIImage? {
+    private func captionImage(
+        original: String, translation: String, fontSize: CGFloat, size: CGSize
+    ) -> CIImage? {
         let format = UIGraphicsImageRendererFormat()
         format.opaque = true
         format.scale = 1
@@ -113,51 +121,69 @@ final class CaptionPiPController: NSObject {
             UIRectFill(CGRect(origin: .zero, size: size))
 
             let inset = CGRect(origin: .zero, size: size).insetBy(dx: 8, dy: 8)
-            let card = UIBezierPath(roundedRect: inset, cornerRadius: 18)
             UIColor(white: 0.12, alpha: 1).setFill()
-            card.fill()
-
-            let placeholder = original.isEmpty && translation.isEmpty
-            let originalText = placeholder ? String(localized: "Listening…") : original
+            UIBezierPath(roundedRect: inset, cornerRadius: 18).fill()
 
             let paragraph = NSMutableParagraphStyle()
             paragraph.alignment = .center
             paragraph.lineBreakMode = .byTruncatingHead
 
-            var y = inset.minY + 14
+            // Clamp to the small PiP canvas so 1–2 lines stay legible.
+            let originalFont = UIFont.systemFont(
+                ofSize: min(max(fontSize, 16), 40), weight: .semibold)
+            let translationFont = UIFont.systemFont(
+                ofSize: min(max(fontSize * 0.86, 14), 34), weight: .regular)
             let textWidth = inset.width - 28
 
-            if !originalText.isEmpty {
-                y = drawText(
-                    originalText,
-                    font: .systemFont(ofSize: 30, weight: .semibold),
-                    color: placeholder ? UIColor.white.withAlphaComponent(0.55) : .white,
-                    paragraph: paragraph,
-                    in: CGRect(x: inset.minX + 14, y: y, width: textWidth, height: 44))
+            let placeholder = original.isEmpty && translation.isEmpty
+            let originalText = placeholder ? String(localized: "Listening…") : original
+
+            var blocks: [(text: NSAttributedString, height: CGFloat)] = []
+            func addBlock(_ string: String, font: UIFont, color: UIColor) {
+                guard !string.isEmpty else { return }
+                let attributed = NSAttributedString(
+                    string: string,
+                    attributes: [.font: font, .foregroundColor: color, .paragraphStyle: paragraph])
+                let measured = attributed.boundingRect(
+                    with: CGSize(width: textWidth, height: .greatestFiniteMagnitude),
+                    options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil
+                ).height
+                blocks.append((attributed, min(measured, font.lineHeight * 2 + 2)))
             }
-            if !translation.isEmpty {
-                _ = drawText(
-                    translation,
-                    font: .systemFont(ofSize: 26, weight: .regular),
-                    color: UIColor.white.withAlphaComponent(0.92),
-                    paragraph: paragraph,
-                    in: CGRect(x: inset.minX + 14, y: y + 6, width: textWidth, height: 40))
+            addBlock(
+                originalText, font: originalFont,
+                color: placeholder ? UIColor.white.withAlphaComponent(0.55) : .white)
+            addBlock(
+                translation, font: translationFont,
+                color: UIColor.white.withAlphaComponent(0.92))
+
+            let spacing: CGFloat = 6
+            let totalHeight =
+                blocks.reduce(0) { $0 + $1.height } + CGFloat(max(0, blocks.count - 1)) * spacing
+            var y = inset.midY - totalHeight / 2
+            for block in blocks {
+                block.text.draw(
+                    with: CGRect(x: inset.minX + 14, y: y, width: textWidth, height: block.height),
+                    options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+                y += block.height + spacing
             }
         }
         guard let cgImage = uiImage.cgImage else { return nil }
         return CIImage(cgImage: cgImage)
     }
 
-    /// Draws (up to two lines of) text and returns the y just below it.
-    private func drawText(
-        _ text: String, font: UIFont, color: UIColor,
-        paragraph: NSParagraphStyle, in rect: CGRect
-    ) -> CGFloat {
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font, .foregroundColor: color, .paragraphStyle: paragraph,
-        ]
-        (text as NSString).draw(in: rect, withAttributes: attributes)
-        return rect.maxY
+    // MARK: - Overlay settings (shared with the macOS NSPanel via UserDefaults)
+
+    private var settingShowOriginal: Bool { defaultsBool(OverlaySettingsKey.showOriginal) }
+    private var settingShowTranslation: Bool { defaultsBool(OverlaySettingsKey.showTranslation) }
+    private var settingFontSize: CGFloat {
+        let stored = UserDefaults.standard.object(forKey: OverlaySettingsKey.fontSize) as? Double
+        return CGFloat(stored ?? OverlaySettingsKey.defaultFontSize)
+    }
+
+    /// Overlay toggles default to on when unset.
+    private func defaultsBool(_ key: String) -> Bool {
+        UserDefaults.standard.object(forKey: key) as? Bool ?? true
     }
 
     // MARK: - Pixel buffer / sample buffer plumbing

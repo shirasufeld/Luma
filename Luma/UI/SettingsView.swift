@@ -242,6 +242,9 @@ private struct OverlaySettingsView: View {
                 Toggle("Show original", isOn: $showOriginal)
                 Toggle("Show translation", isOn: $showTranslation)
             }
+            #if os(macOS)
+            // The surface style applies to the macOS floating panel; the iOS
+            // caption surface is an opaque Picture in Picture window.
             Section("Surface") {
                 Picker("Background", selection: $surfaceRawValue) {
                     ForEach(OverlaySurfaceStyle.allCases) { style in
@@ -256,6 +259,7 @@ private struct OverlaySettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            #endif
         }
         .formStyle(.grouped)
     }
