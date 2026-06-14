@@ -21,7 +21,9 @@ struct SettingsView: View {
                 OverlaySettingsView()
             }
         }
+        #if os(macOS)
         .frame(width: 460, height: 400)
+        #endif
         .navigationTitle("Settings")
         .appLanguage(appLanguageRaw)
     }
@@ -66,6 +68,9 @@ private struct GeneralSettingsView: View {
                 }
             }
             .disabled(!isSessionIdle)
+            #if os(macOS)
+            // iOS captures only the microphone (no system-audio API), so the
+            // input-source picker is macOS-only.
             Section("Audio") {
                 Picker("Input source", selection: $store.inputKind) {
                     Text("Microphone").tag(AudioInputKind.microphone)
@@ -73,6 +78,7 @@ private struct GeneralSettingsView: View {
                 }
             }
             .disabled(!isSessionIdle)
+            #endif
             Section("Translation") {
                 Picker("Mode", selection: $store.translationMode) {
                     Text("Fast").tag(TranslationMode.fast)
@@ -236,6 +242,9 @@ private struct OverlaySettingsView: View {
                 Toggle("Show original", isOn: $showOriginal)
                 Toggle("Show translation", isOn: $showTranslation)
             }
+            #if os(macOS)
+            // The surface style applies to the macOS floating panel; the iOS
+            // caption surface is an opaque Picture in Picture window.
             Section("Surface") {
                 Picker("Background", selection: $surfaceRawValue) {
                     ForEach(OverlaySurfaceStyle.allCases) { style in
@@ -250,6 +259,7 @@ private struct OverlaySettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            #endif
         }
         .formStyle(.grouped)
     }

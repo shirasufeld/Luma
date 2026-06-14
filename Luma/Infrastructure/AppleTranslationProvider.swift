@@ -88,7 +88,7 @@ private nonisolated final class TranslationEngine: @unchecked Sendable {
         target: Locale.Language,
         mode: TranslationMode
     ) -> TranslationSession {
-        if #available(macOS 26.4, *) {
+        if #available(macOS 26.4, iOS 26.4, *) {
             let strategy: TranslationSession.Strategy =
                 switch mode {
                 case .accurate: .highFidelity
@@ -97,7 +97,8 @@ private nonisolated final class TranslationEngine: @unchecked Sendable {
             return TranslationSession(
                 installedSource: source, target: target, preferredStrategy: strategy)
         } else {
-            // Strategies need macOS 26.4+; earlier systems use the default.
+            // Strategies need macOS 26.4 / iOS 26.4+; earlier systems use the
+            // default.
             return TranslationSession(installedSource: source, target: target)
         }
     }

@@ -1,19 +1,33 @@
+#if os(macOS)
 import AppKit
+#endif
 import SwiftUI
 
-/// AppKit bridge for the floating caption window: a borderless,
-/// non-activating panel that floats above other windows, joins all Spaces
-/// (including full-screen apps), and can be dragged or resized directly.
+/// Drives the floating caption surface, using each platform's native idiom.
+///
+/// On macOS this is an AppKit bridge to a borderless, non-activating `NSPanel`
+/// that floats above other windows and joins all Spaces. On iOS there is no
+/// cross-app floating window, so captions float via Picture in Picture instead
+/// (see `CaptionPiPController`). `isVisible` reflects whichever surface is up.
 @MainActor
 @Observable
 final class SubtitleOverlayController {
     private let store: SessionStore
+    #if os(macOS)
     private var panel: NSPanel?
+    #else
+    @ObservationIgnored private let pip = CaptionPiPController()
+    #endif
 
     private(set) var isVisible = false
 
     init(store: SessionStore) {
         self.store = store
+        #if os(iOS)
+        pip.bind(store: store)
+        // Mirror externally-driven PiP stops (user closes the PiP window).
+        pip.onActiveChange = { [weak self] active in self?.isVisible = active }
+        #endif
     }
 
     func toggle() {
@@ -25,17 +39,31 @@ final class SubtitleOverlayController {
     }
 
     func show() {
+        #if os(macOS)
         let panel = self.panel ?? makePanel()
         self.panel = panel
         panel.orderFrontRegardless()
+        #else
+        pip.start()
+        #endif
         isVisible = true
     }
 
     func hide() {
+        #if os(macOS)
         panel?.orderOut(nil)
+        #else
+        pip.stop()
+        #endif
         isVisible = false
     }
 
+    #if os(iOS)
+    /// The hidden view hosting the PiP source layer; mounted by `ContentView`.
+    var pipLayerHost: some View { CaptionPiPLayerView(layer: pip.displayLayer) }
+    #endif
+
+    #if os(macOS)
     private func makePanel() -> NSPanel {
         let panel = NSPanel(
             contentRect: initialFrame(),
@@ -70,4 +98,5 @@ final class SubtitleOverlayController {
             width: width,
             height: height)
     }
+    #endif
 }

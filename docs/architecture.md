@@ -87,10 +87,13 @@ AudioInputProviding                     TranscriptionProviding
 4. 模型下载：`LanguageAvailability.status == .supported`（未安装）时，UI 提示并挂载隐藏 `TranslationDownloadBridge` view（`.translationTask` + `prepareTranslation()`）触发系统下载流程；完成后切回程序化 session。
 5. 不可用语言对：字幕回退为原文 + 状态栏明示。
 
-## 字幕 overlay
+## 字幕 overlay（按平台采用原生形态）
 
-- `NSPanel`：`styleMask [.nonactivatingPanel, .titled→borderless]`、`level .floating`、`collectionBehavior [.canJoinAllSpaces, .fullScreenAuxiliary]`、`isMovableByWindowBackground`，内容为 `NSHostingView`。
-- 表面：默认 Liquid Glass（`glassEffect`），`accessibilityReduceTransparency` 或用户选择时切换实底/material；动态字体；VoiceOver 朗读最新 finalized+译文。
+由 `SubtitleOverlayController` 统一驱动（`toggle/show/hide` + `isVisible`），具体表面分平台：
+
+- **macOS — 浮动面板**：`SubtitleOverlayView` 装入 `NSPanel`（`styleMask [.nonactivatingPanel, .borderless …]`、`level .floating`、`collectionBehavior [.canJoinAllSpaces, .fullScreenAuxiliary]`、`isMovableByWindowBackground`，内容 `NSHostingView`）。表面默认 Liquid Glass（`glassEffect`），`accessibilityReduceTransparency` 或用户选择时切实底/material；动态字体；VoiceOver 朗读最新 finalized+译文。
+- **iOS — 画中画(PiP)**：`CaptionPiPController` 把原文/译文自绘进 `CVPixelBuffer` → `CMSampleBufferCreateReadyWithImageBuffer` → `AVSampleBufferDisplayLayer`，驱动 `AVPictureInPictureController.ContentSource(sampleBufferDisplayLayer:playbackDelegate:)`；`ContentView` 用 1×1 隐藏 `CaptionPiPLayerView` 挂载源 layer。配 `UIBackgroundModes=audio` + `AVAudioSession.playAndRecord/[.mixWithOthers,.defaultToSpeaker]`，退后台仍采集、字幕浮于其他 App 之上、不打断其他 App 播放。PiP 共享 Overlay 设置的 `showOriginal/showTranslation/fontSize`（`surface` 仅 macOS，PiP 为不透明视频）。PiP 为真机能力，模拟器不支持。
+- **音频来源**：macOS 麦克风 + 系统音频（CoreAudio process tap）；**iOS 仅麦克风**——iOS 无公开 API 捕获其他 App 系统音频（详见 research.md §8.1）。
 
 ## 延迟指标
 
@@ -103,4 +106,17 @@ AudioInputProviding                     TranscriptionProviding
 
 ## 风险
 
-见 research.md §7。系统音频 provider（M9）失败不影响麦克风主管线；翻译不可用不影响转写显示。
+见 research.md §7。macOS 系统音频 provider 失败不影响麦克风主管线；翻译不可用不影响转写显示。iOS 已移除系统音频 provider（平台不支持）。
+
+## 未来 TODO / 路线图
+
+- **iOS 系统级音频（ReplayKit Broadcast Upload Extension）** — *未来功能性更新，未放弃*。
+  iOS 无法用 ScreenCaptureKit 捕获其他 App 音频（research.md §8.1），唯一可能的系统级
+  路径是 ReplayKit **Broadcast Upload Extension**：用户经系统广播选择器发起广播，扩展进程
+  收到 `RPSampleBufferTypeAudioApp`（App 音频）/ `…Mic`。设计要点与待解问题：
+  - 扩展为独立 target + App Group，与主 App 经共享容器/IPC 传字幕；
+  - 扩展内存上限（历史 ~50MB）可能跑不动设备端 `SpeechAnalyzer` + `TranslationSession`
+    模型 —— 需先做内存可行性 spike（或把转写/翻译留在主 App，扩展仅转发 PCM）；
+  - 字幕展示仍可复用现有 iOS PiP（`CaptionPiPController`）；
+  - 体验：需用户主动发起系统广播，非静默。
+  当前迭代不实现，但 `AudioInputProviding` 协议边界已为其预留接入位。

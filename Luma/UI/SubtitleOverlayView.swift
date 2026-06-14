@@ -1,7 +1,10 @@
+#if os(macOS)
 import SwiftUI
 
-/// Content of the floating caption window: the most recent finalized line,
-/// its translation, and the running volatile hypothesis.
+/// Content of the macOS floating caption window (the `NSPanel` overlay): the
+/// most recent finalized line, its translation, and the running volatile
+/// hypothesis. iOS renders captions into a Picture in Picture window instead
+/// (see `CaptionPiPController`).
 ///
 /// Honors Reduce Transparency (falls back to a solid surface), supports
 /// VoiceOver via a live accessibility label, and keeps decoration minimal
@@ -123,3 +126,4 @@ struct SubtitleOverlayView: View {
         }
     }
 }
+#endif

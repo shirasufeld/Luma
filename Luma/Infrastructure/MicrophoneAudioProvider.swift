@@ -16,6 +16,20 @@ actor MicrophoneAudioProvider: AudioInputProviding {
     func start() throws -> AsyncStream<AudioChunk> {
         stopCaptureIfNeeded()
 
+        #if os(iOS)
+        // iOS requires an active audio session before the engine can tap the
+        // microphone. `.playAndRecord` + `.mixWithOthers` lets us record while
+        // other apps keep playing (so captioning their speaker output doesn't
+        // interrupt them) and satisfies Picture in Picture's requirement for an
+        // active audio session; `.defaultToSpeaker` keeps normal routing.
+        // macOS needs none of this.
+        let session = AVAudioSession.sharedInstance()
+        try session.setCategory(
+            .playAndRecord, mode: .measurement,
+            options: [.mixWithOthers, .defaultToSpeaker])
+        try session.setActive(true)
+        #endif
+
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
         let (stream, continuation) = AsyncStream.makeStream(
@@ -55,6 +69,9 @@ actor MicrophoneAudioProvider: AudioInputProviding {
         stopCaptureIfNeeded()
         continuation?.finish()
         continuation = nil
+        #if os(iOS)
+        try? AVAudioSession.sharedInstance().setActive(false)
+        #endif
     }
 
     private func stopCaptureIfNeeded() {

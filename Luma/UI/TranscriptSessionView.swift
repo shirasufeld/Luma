@@ -18,50 +18,31 @@ struct TranscriptSessionView: View {
         VStack(spacing: 0) {
             transcriptList
             Divider()
+            // macOS packs the controls into the window toolbar; on iOS the
+            // bottom region belongs to the TabView, so the controls live in an
+            // in-content bar above the status line instead.
+            #if os(iOS)
+            iosControlBar
+            Divider()
+            #endif
             statusBar
         }
+        #if os(macOS)
         .toolbar {
             ToolbarItemGroup {
-                Picker("Input", selection: $store.inputKind) {
-                    Label("Microphone", systemImage: "microphone")
-                        .tag(AudioInputKind.microphone)
-                    Label("System Audio", systemImage: "speaker.wave.2")
-                        .tag(AudioInputKind.systemAudio)
-                }
-                .pickerStyle(.segmented)
-                .disabled(store.sessionState != .idle)
-
+                inputPicker
                 controlButtons
-
-                if let overlay {
-                    Toggle(
-                        "Overlay", systemImage: "captions.bubble",
-                        isOn: Binding(
-                            get: { overlay.isVisible },
-                            set: { _ in overlay.toggle() }
-                        )
-                    )
-                    .help("Show or hide the floating caption window")
-                }
-
-                if exporter != nil {
-                    Menu("Export", systemImage: "square.and.arrow.up") {
-                        Button("Plain Text…") { export(.text) }
-                        Button("SRT Subtitles…") { export(.srt) }
-                    }
-                    .menuIndicator(.hidden)
-                    // Match the neutral monochrome of the other toolbar
-                    // buttons instead of the app accent.
-                    .tint(.primary)
-                    .disabled(store.entries.isEmpty)
-                }
-
+                overlayToggle
+                exportMenu
+                // macOS opens the dedicated Settings scene; iOS presents
+                // settings as a sheet from ContentView's navigation bar.
                 SettingsLink {
                     Label("Settings", systemImage: "gearshape")
                 }
                 .help("Open Settings")
             }
         }
+        #endif
         .alert(
             "Export Failed",
             isPresented: .init(
@@ -75,6 +56,66 @@ struct TranscriptSessionView: View {
     }
 
     // MARK: - Controls
+
+    #if os(iOS)
+    /// In-content control bar for iOS. There is only one audio source on iOS
+    /// (the microphone — iOS can't capture other apps' system audio), so no
+    /// input picker is shown; just the transport and export actions.
+    private var iosControlBar: some View {
+        HStack(spacing: 16) {
+            controlButtons
+            Spacer()
+            overlayToggle
+            exportMenu
+        }
+        .labelStyle(.iconOnly)
+        .font(.title3)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+    #endif
+
+    #if os(macOS)
+    private var inputPicker: some View {
+        Picker("Input", selection: $store.inputKind) {
+            Label("Microphone", systemImage: "microphone")
+                .tag(AudioInputKind.microphone)
+            Label("System Audio", systemImage: "speaker.wave.2")
+                .tag(AudioInputKind.systemAudio)
+        }
+        .pickerStyle(.segmented)
+        .disabled(store.sessionState != .idle)
+    }
+    #endif
+
+    @ViewBuilder
+    private var overlayToggle: some View {
+        if let overlay {
+            Toggle(
+                "Overlay", systemImage: "captions.bubble",
+                isOn: Binding(
+                    get: { overlay.isVisible },
+                    set: { _ in overlay.toggle() }
+                )
+            )
+            .help("Show or hide the caption overlay")
+        }
+    }
+
+    @ViewBuilder
+    private var exportMenu: some View {
+        if exporter != nil {
+            Menu("Export", systemImage: "square.and.arrow.up") {
+                Button("Plain Text…") { export(.text) }
+                Button("SRT Subtitles…") { export(.srt) }
+            }
+            .menuIndicator(.hidden)
+            // Match the neutral monochrome of the other toolbar buttons
+            // instead of the app accent.
+            .tint(.primary)
+            .disabled(store.entries.isEmpty)
+        }
+    }
 
     @ViewBuilder
     private var controlButtons: some View {
