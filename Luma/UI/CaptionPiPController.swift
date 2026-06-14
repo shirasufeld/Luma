@@ -55,6 +55,12 @@ final class CaptionPiPController: NSObject {
         // even before any transcription session has run), then start PiP.
         Task {
             await AudioSessionCoordinator.shared.setPictureInPicture(true)
+            // The user may have toggled off while the session was activating;
+            // if so, release the session and don't start PiP.
+            guard isActive else {
+                await AudioSessionCoordinator.shared.setPictureInPicture(false)
+                return
+            }
             pipController.startPictureInPicture()
         }
     }

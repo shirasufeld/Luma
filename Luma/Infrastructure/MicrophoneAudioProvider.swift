@@ -44,6 +44,9 @@ actor MicrophoneAudioProvider: AudioInputProviding {
             stopCaptureIfNeeded()
             continuation.finish()
             self.continuation = nil
+            #if os(iOS)
+            await AudioSessionCoordinator.shared.setRecording(false)
+            #endif
             throw error
         }
         return stream
