@@ -16,6 +16,8 @@ final class SubtitleOverlayController {
     private let store: SessionStore
     #if os(macOS)
     private var panel: NSPanel?
+    #else
+    @ObservationIgnored private let pip = CaptionPiPController()
     #endif
 
     private(set) var isVisible = false
@@ -25,6 +27,11 @@ final class SubtitleOverlayController {
 
     init(store: SessionStore) {
         self.store = store
+        #if os(iOS)
+        pip.bind(store: store)
+        // Mirror externally-driven PiP stops (user closes the PiP window).
+        pip.onActiveChange = { [weak self] active in self?.isVisible = active }
+        #endif
     }
 
     func toggle() {
@@ -40,6 +47,8 @@ final class SubtitleOverlayController {
         let panel = self.panel ?? makePanel()
         self.panel = panel
         panel.orderFrontRegardless()
+        #else
+        pip.start()
         #endif
         isVisible = true
     }
@@ -47,9 +56,16 @@ final class SubtitleOverlayController {
     func hide() {
         #if os(macOS)
         panel?.orderOut(nil)
+        #else
+        pip.stop()
         #endif
         isVisible = false
     }
+
+    #if os(iOS)
+    /// The hidden view hosting the PiP source layer; mounted by `ContentView`.
+    var pipLayerHost: some View { CaptionPiPLayerView(layer: pip.displayLayer) }
+    #endif
 
     #if os(macOS)
     private func makePanel() -> NSPanel {

@@ -68,6 +68,9 @@ private struct GeneralSettingsView: View {
                 }
             }
             .disabled(!isSessionIdle)
+            #if os(macOS)
+            // iOS captures only the microphone (no system-audio API), so the
+            // input-source picker is macOS-only.
             Section("Audio") {
                 Picker("Input source", selection: $store.inputKind) {
                     Text("Microphone").tag(AudioInputKind.microphone)
@@ -75,6 +78,7 @@ private struct GeneralSettingsView: View {
                 }
             }
             .disabled(!isSessionIdle)
+            #endif
             Section("Translation") {
                 Picker("Mode", selection: $store.translationMode) {
                     Text("Fast").tag(TranslationMode.fast)

@@ -58,25 +58,24 @@ struct TranscriptSessionView: View {
     // MARK: - Controls
 
     #if os(iOS)
-    /// In-content control bar for iOS: input picker on top, transport and
-    /// export actions below.
+    /// In-content control bar for iOS. There is only one audio source on iOS
+    /// (the microphone — iOS can't capture other apps' system audio), so no
+    /// input picker is shown; just the transport and export actions.
     private var iosControlBar: some View {
-        VStack(spacing: 10) {
-            inputPicker
-            HStack(spacing: 16) {
-                controlButtons
-                Spacer()
-                overlayToggle
-                exportMenu
-            }
-            .labelStyle(.iconOnly)
-            .font(.title3)
+        HStack(spacing: 16) {
+            controlButtons
+            Spacer()
+            overlayToggle
+            exportMenu
         }
+        .labelStyle(.iconOnly)
+        .font(.title3)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
     }
     #endif
 
+    #if os(macOS)
     private var inputPicker: some View {
         Picker("Input", selection: $store.inputKind) {
             Label("Microphone", systemImage: "microphone")
@@ -87,6 +86,7 @@ struct TranscriptSessionView: View {
         .pickerStyle(.segmented)
         .disabled(store.sessionState != .idle)
     }
+    #endif
 
     @ViewBuilder
     private var overlayToggle: some View {

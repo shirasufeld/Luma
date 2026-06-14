@@ -18,10 +18,15 @@ actor MicrophoneAudioProvider: AudioInputProviding {
 
         #if os(iOS)
         // iOS requires an active audio session before the engine can tap the
-        // microphone. `.measurement` gives the cleanest, unprocessed input for
-        // speech recognition. macOS needs none of this.
+        // microphone. `.playAndRecord` + `.mixWithOthers` lets us record while
+        // other apps keep playing (so captioning their speaker output doesn't
+        // interrupt them) and satisfies Picture in Picture's requirement for an
+        // active audio session; `.defaultToSpeaker` keeps normal routing.
+        // macOS needs none of this.
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.record, mode: .measurement)
+        try session.setCategory(
+            .playAndRecord, mode: .measurement,
+            options: [.mixWithOthers, .defaultToSpeaker])
         try session.setActive(true)
         #endif
 

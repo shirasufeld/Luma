@@ -138,9 +138,20 @@
 - 并发隔离：`SCContentFilter` / `SCStream` 非 Sendable，按 `AppleTranslationProvider` 的 confinement 模式封进 nonisolated `CaptureEngine`，仅 `AsyncStream<AudioChunk>` 等 Sendable 值跨 actor；picker filter 经一次性 `@unchecked Sendable` box 交接（同 `AudioChunk` 规则）。
 - **ScreenCaptureKit 仅 device SDK，不在 simulator SDK**【已验证-SDK】：`SCStreamSystemAudioProvider` 用 `#if os(iOS) && !targetEnvironment(simulator)` 门控；simulator 与 iOS 26 回退麦克风。
 
-### 8.1 未决（需 iOS 27 真机）
+### 8.1 iOS 27 真机结论（M0 spike 已定性）
 
-| 事项 | 状态 | 缓解 |
-|---|---|---|
-| `SCStream` 在 iOS 的捕获 scope（仅本 App vs 跨 App） | 未在真机验证（本机无 iOS 27 设备/运行时；simulator 为 iOS 26 且无 ScreenCaptureKit） | provider 已隔离在 `AudioInputProviding` 之后；若需跨 App 需评估 ReplayKit Broadcast Upload Extension（`RPSampleBufferTypeAudioApp`） |
-| `presentForCurrentApplication` 授权流与回调时序 | 仅编译验证 | 真机 smoke test；observer 三回调（update/cancel/fail）均一次性 resume |
+**iOS 无法捕获其他 App 的系统音频。** iOS 27 真机实测：`SCContentSharingPicker.
+presentForCurrentApplication()` 弹出的是"仅画面 / 画面+麦克风"，`SCStream` 下发的是
+**当前 App 自身的屏幕(`RemoteVideoQueue`) + 可选麦克风(`RemoteMicrophoneQueue`)**，
+日志为 "stream output NOT found. Dropping frame"（我们只注册了 `.audio` output）。
+选麦克风会降级设备自身播放，`stopCapture()` 卡死。即 iOS 的 ScreenCaptureKit 是
+**当前 App 屏幕录制**，非系统音频 tap；`capturesAudio` 捕的是本 App 自身音频。
+
+**决策**：iOS 移除 SCStream provider，**改麦克风专用**；系统音频仅 macOS。字幕改走
+**Picture in Picture**（`AVPictureInPictureController.ContentSource(sampleBufferDisplayLayer:
+playbackDelegate:)`，`ios(15.0)`；自绘 `CVPixelBuffer` →
+`CMSampleBufferCreateReadyWithImageBuffer` → `AVSampleBufferDisplayLayer`），配
+`UIBackgroundModes=audio` + `AVAudioSession.playAndRecord/.mixWithOthers` 实现后台采集、
+不打断其他 App 播放、字幕浮于其他 App 之上。跨 App 系统级音频若未来要做，只能走
+ReplayKit Broadcast Upload Extension（独立扩展、~50MB 内存上限，设备端模型恐跑不动，
+不在当前范围）。

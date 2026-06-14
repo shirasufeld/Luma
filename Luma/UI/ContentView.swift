@@ -35,8 +35,13 @@ struct ContentView: View {
                     }
                 }
             }
-            .fullScreenCover(isPresented: overlayPresented) {
-                captionOverlay
+            // Captions float over other apps via Picture in Picture; the PiP
+            // source layer is mounted here (tiny/hidden — PiP reads its enqueued
+            // frames, not its on-screen size).
+            .background {
+                dependencies.overlay.pipLayerHost
+                    .frame(width: 1, height: 1)
+                    .allowsHitTesting(false)
             }
         #endif
     }
@@ -81,30 +86,4 @@ struct ContentView: View {
             overlay: dependencies.overlay,
             exporter: dependencies.exporter)
     }
-
-    #if os(iOS)
-    /// iOS has no cross-app floating window, so the caption "overlay" is a
-    /// full-screen in-app surface (e.g. lay the device flat for a table read).
-    private var overlayPresented: Binding<Bool> {
-        Binding(
-            get: { dependencies.overlay.isVisible },
-            set: { if !$0 { dependencies.overlay.hide() } })
-    }
-
-    private var captionOverlay: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            SubtitleOverlayView(store: dependencies.store)
-        }
-        .overlay(alignment: .topTrailing) {
-            Button("Close", systemImage: "xmark.circle.fill") {
-                dependencies.overlay.hide()
-            }
-            .labelStyle(.iconOnly)
-            .font(.title2)
-            .tint(.white)
-            .padding()
-        }
-    }
-    #endif
 }
