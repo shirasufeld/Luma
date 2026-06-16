@@ -13,7 +13,8 @@ xcuserdata/
 .build/
 .swiftpm/
 
-# Signing & private configuration
+# Signing & private configuration (team id + personal bundle ids live here)
+BuildConfig/Local.xcconfig
 *.p12
 *.mobileprovision
 *.provisionprofile

@@ -1,0 +1,12 @@
+// Personal signing — copy this file to "Local.xcconfig" (same folder) and fill
+// in your own values. Local.xcconfig is gitignored, so your team id and bundle
+// ids are never committed.
+//
+// The App Group and the broadcast extension id are derived from the app bundle
+// id at runtime / via build-setting expansion, so changing the bundle id below
+// is all you need — nothing else has to be edited.
+
+// DEVELOPMENT_TEAM = YOURTEAMID
+// LUMA_BUNDLE_ID_APP = com.example.Luma
+// LUMA_BUNDLE_ID_TESTS = com.example.LumaTests
+// LUMA_BUNDLE_ID_EXTENSION = com.example.Luma.BroadcastExtension

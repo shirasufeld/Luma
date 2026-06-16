@@ -1,0 +1,17 @@
+// Project-wide build settings, applied to every target as the project base
+// configuration.
+//
+// Signing identity (DEVELOPMENT_TEAM) and bundle ids are personal. This file
+// only carries neutral, already-public defaults so the repo builds with no
+// personal data committed. Your real values go in BuildConfig/Local.xcconfig,
+// which is gitignored and included below (copy Local.xcconfig.example to start).
+
+LUMA_BUNDLE_ID_APP = com.example.Luma
+LUMA_BUNDLE_ID_TESTS = com.example.LumaTests
+LUMA_BUNDLE_ID_EXTENSION = com.example.Luma.BroadcastExtension
+
+DEVELOPMENT_TEAM =
+
+// Optional local override — never committed (see .gitignore). Last assignment
+// wins, so anything set here replaces the defaults above.
+#include? "Local.xcconfig"
