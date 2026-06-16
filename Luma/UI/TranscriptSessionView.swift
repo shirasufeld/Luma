@@ -58,24 +58,49 @@ struct TranscriptSessionView: View {
     // MARK: - Controls
 
     #if os(iOS)
-    /// In-content control bar for iOS. There is only one audio source on iOS
-    /// (the microphone — iOS can't capture other apps' system audio), so no
-    /// input picker is shown; just the transport and export actions.
+    /// In-content control bar for iOS: an audio-source row (with the system
+    /// broadcast control when capturing other apps' audio) above the transport
+    /// and export actions.
     private var iosControlBar: some View {
-        HStack(spacing: 16) {
-            controlButtons
-                .labelStyle(.iconOnly)
-            Spacer()
-            // Labeled so the caption Picture in Picture control is
-            // self-explanatory rather than a bare icon switch.
-            overlayToggle
-                .toggleStyle(.button)
-            exportMenu
-                .labelStyle(.iconOnly)
+        VStack(spacing: 10) {
+            iosInputRow
+            HStack(spacing: 16) {
+                controlButtons
+                    .labelStyle(.iconOnly)
+                Spacer()
+                // Labeled so the caption Picture in Picture control is
+                // self-explanatory rather than a bare icon switch.
+                overlayToggle
+                    .toggleStyle(.button)
+                exportMenu
+                    .labelStyle(.iconOnly)
+            }
+            .font(.title3)
         }
-        .font(.title3)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
+    }
+
+    /// Audio source selector. System Audio adds the ReplayKit broadcast button;
+    /// the user enables Captions, starts the broadcast, picks Luma, then opens
+    /// the app to caption.
+    @ViewBuilder
+    private var iosInputRow: some View {
+        HStack(spacing: 12) {
+            Picker("Input", selection: $store.inputKind) {
+                Label("Microphone", systemImage: "microphone")
+                    .tag(AudioInputKind.microphone)
+                Label("System Audio", systemImage: "speaker.wave.2")
+                    .tag(AudioInputKind.systemAudio)
+            }
+            .pickerStyle(.segmented)
+            .disabled(store.sessionState != .idle)
+
+            if store.inputKind == .systemAudio {
+                BroadcastPickerButton()
+                    .frame(width: 44, height: 44)
+            }
+        }
     }
     #endif
 
@@ -133,6 +158,12 @@ struct TranscriptSessionView: View {
                 let pair = store.languagePair
                 let kind = store.inputKind
                 let mode = store.translationMode
+                #if os(iOS)
+                // System-audio captions run while the user is in another app;
+                // PiP both shows them and keeps Luma alive in the background, so
+                // start it up front (it must be started from the foreground).
+                if kind == .systemAudio { overlay?.show() }
+                #endif
                 Task {
                     await session.start(
                         languagePair: pair, inputKind: kind, translationMode: mode)

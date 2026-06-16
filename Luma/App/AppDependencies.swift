@@ -37,7 +37,8 @@ final class AppDependencies {
 
     /// Builds the platform-appropriate capture provider for a given source.
     /// Microphone capture is cross-platform; system-audio capture uses a Core
-    /// Audio process tap on macOS and ScreenCaptureKit (iOS 27+) on iOS.
+    /// Audio process tap on macOS and a ReplayKit broadcast-upload extension on
+    /// iOS (see `BroadcastAudioProvider`).
     private nonisolated static func makeAudioProvider(_ kind: AudioInputKind) -> any AudioInputProviding {
         switch kind {
         case .microphone:
@@ -46,10 +47,10 @@ final class AppDependencies {
             #if os(macOS)
             return SystemAudioTapProvider()
             #else
-            // iOS has no public API to capture other apps' system audio
-            // (ScreenCaptureKit only captures the current app), so the UI does
-            // not offer this source; fall back to the microphone defensively.
-            return MicrophoneAudioProvider()
+            // iOS can't tap other apps' audio in-process; the broadcast-upload
+            // extension forwards PCM through the App Group and this provider
+            // drains it. The user starts the system broadcast from the UI.
+            return BroadcastAudioProvider()
             #endif
         }
     }

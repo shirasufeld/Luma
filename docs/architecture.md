@@ -93,7 +93,7 @@ AudioInputProviding                     TranscriptionProviding
 
 - **macOS — 浮动面板**：`SubtitleOverlayView` 装入 `NSPanel`（`styleMask [.nonactivatingPanel, .borderless …]`、`level .floating`、`collectionBehavior [.canJoinAllSpaces, .fullScreenAuxiliary]`、`isMovableByWindowBackground`，内容 `NSHostingView`）。表面默认 Liquid Glass（`glassEffect`），`accessibilityReduceTransparency` 或用户选择时切实底/material；动态字体；VoiceOver 朗读最新 finalized+译文。
 - **iOS — 画中画(PiP)**：`CaptionPiPController` 把原文/译文自绘进 `CVPixelBuffer` → `CMSampleBufferCreateReadyWithImageBuffer` → `AVSampleBufferDisplayLayer`，驱动 `AVPictureInPictureController.ContentSource(sampleBufferDisplayLayer:playbackDelegate:)`；`ContentView` 用 1×1 隐藏 `CaptionPiPLayerView` 挂载源 layer。配 `UIBackgroundModes=audio` + `AVAudioSession.playAndRecord/[.mixWithOthers,.defaultToSpeaker]`，退后台仍采集、字幕浮于其他 App 之上、不打断其他 App 播放。PiP 共享 Overlay 设置的 `showOriginal/showTranslation/fontSize`（`surface` 仅 macOS，PiP 为不透明视频）。PiP 为真机能力，模拟器不支持。
-- **音频来源**：macOS 麦克风 + 系统音频（CoreAudio process tap）；**iOS 仅麦克风**——iOS 无公开 API 捕获其他 App 系统音频（详见 research.md §8.1）。
+- **音频来源**：macOS 麦克风 + 系统音频（CoreAudio process tap）；iOS 麦克风 + 系统音频。iOS 无公开 API 在进程内捕获其他 App 音频（详见 research.md §8.1），故系统音频走 **ReplayKit 广播上传扩展**（见下「## iOS 系统级音频」）。
 
 ## 延迟指标
 
@@ -108,15 +108,55 @@ AudioInputProviding                     TranscriptionProviding
 
 见 research.md §7。macOS 系统音频 provider 失败不影响麦克风主管线；翻译不可用不影响转写显示。iOS 已移除系统音频 provider（平台不支持）。
 
-## 未来 TODO / 路线图
+## iOS 系统级音频（ReplayKit 广播上传扩展）
 
-- **iOS 系统级音频（ReplayKit Broadcast Upload Extension）** — *未来功能性更新，未放弃*。
-  iOS 无法用 ScreenCaptureKit 捕获其他 App 音频（research.md §8.1），唯一可能的系统级
-  路径是 ReplayKit **Broadcast Upload Extension**：用户经系统广播选择器发起广播，扩展进程
-  收到 `RPSampleBufferTypeAudioApp`（App 音频）/ `…Mic`。设计要点与待解问题：
-  - 扩展为独立 target + App Group，与主 App 经共享容器/IPC 传字幕；
-  - 扩展内存上限（历史 ~50MB）可能跑不动设备端 `SpeechAnalyzer` + `TranslationSession`
-    模型 —— 需先做内存可行性 spike（或把转写/翻译留在主 App，扩展仅转发 PCM）；
-  - 字幕展示仍可复用现有 iOS PiP（`CaptionPiPController`）；
-  - 体验：需用户主动发起系统广播，非静默。
-  当前迭代不实现，但 `AudioInputProviding` 协议边界已为其预留接入位。
+iOS 无法在进程内捕获其他 App 音频（research.md §8.1），故经 ReplayKit **Broadcast
+Upload Extension**（`LumaBroadcastExtension` target，独立进程）实现。架构「B 方案」——
+**扩展仅转发 PCM，转写/翻译/字幕全部留主 App**（扩展 ~50MB 内存上限装不下设备端
+`SpeechAnalyzer`+`TranslationSession`，故扩展零 ML）：
+
+```
+其他 App 音频 ──(系统广播)──▶ SampleHandler.processSampleBuffer(.audioApp)
+  → CMSampleBuffer → AVAudioPCMBuffer → 转 48k mono Float32（AVAudioConverter）
+  → SharedAudioRing.write（App Group mmap SPSC 环形缓冲）→ Darwin 通知 .audio
+      │  group.com.example.Luma
+      ▼
+主 App  BroadcastAudioProvider: AudioInputProviding
+  → Darwin .audio 唤醒 → SharedAudioRing.read → AVAudioPCMBuffer → AudioChunk
+  → AsyncStream<AudioChunk>（现有协议边界，下游零改）
+  → SpeechAnalyzerTranscriber → SessionController → CaptionPiPController（PiP 浮窗）
+```
+
+要点与文件：
+- 共享层 `Shared/`（双 target 成员）：`SharedAudioRing`（mmap 单生产者单消费者环形缓冲，
+  monotonic 64-bit 索引 + 内存屏障）、`DarwinNotificationCenter`（`CFNotificationCenter`
+  Darwin 通知，跨进程纯唤醒）、`BroadcastShared`（App Group id、规范 PCM 格式、通知名）。
+- 扩展 `LumaBroadcastExtension/`：`SampleHandler: RPBroadcastSampleHandler` 只取
+  `.audioApp`、丢弃 `.video/.audioMic`；Info.plist `NSExtensionAttributes.RPBroadcastProcessMode
+  = RPBroadcastProcessModeSampleBuffer`（缺则被 ASC 拒）；entitlements 含同一 App Group。
+- 主 App：`BroadcastAudioProvider`（`AppDependencies.makeAudioProvider` 的 iOS `.systemAudio`
+  分支）；UI `BroadcastPickerButton`（`RPSystemBroadcastPickerView`，`preferredExtension`
+  直启本扩展、隐藏麦克风按钮）；iOS 选 System Audio 时控制栏显示广播按钮，Start 时自动起 PiP。
+- 工程：扩展为 iOS-only target；嵌入相位与依赖加 `platformFilter = ios`，故 macOS 构建不嵌入
+  此 appex（三向 build 已验证）。共享类在主 App 默认 `MainActor` 隔离下显式标 `nonisolated`。
+- 保活：靠 active PiP（持续渲染字幕帧）+ `.playback` 会话 + `UIBackgroundModes=audio`，
+  使主 App 在用户切到其他 App 后仍转写——与现有麦克风+PiP 后台路径同机制。
+- 体验：系统广播须用户主动发起、控制中心常驻红条、停止亦需手动（Apple 强制隐私行为）。
+
+**iOS 27 弃用提示**：`RPSystemBroadcastPickerView` / `RPBroadcastSampleHandler` /
+`RPSampleBufferType` 在 **iOS 27 SDK 标记 `API_DEPRECATED`**（指向 ScreenCaptureKit）。
+但本项目部署目标 iOS **26.0**，弃用版本 27.0 > 26.0，故 iOS 26 上完全受支持、**编译零弃用
+警告**。且 ScreenCaptureKit 在 iOS 经真机验证只能录当前 App（research.md §8.1），其跨 App
+`excludesCurrentProcessAudio` 又是 `ios(27.0)`，**无法作为 iOS 26 的替代**——故 ReplayKit
+广播仍是当前唯一可行路径。未来基线升到 iOS 27 时再评估 ScreenCaptureKit 广播迁移。
+
+**残留风险（待真机验证）**：后台保活是否在用户长时间停留其他 App 时稳定（仅靠 PiP）。
+若真机 spike 显示被挂起/降频，启用静音 buffer 保活兜底（`AudioSessionCoordinator` 预留）。
+另：用户从控制中心停广播 → provider 结束音频流，但 `SessionController` 不会自动转 idle
+（协议无回传），需用户在 App 内点 Stop——已知 UX 小瑕疵。
+App Group + appex 真机部署需开发者账号（与 TestFlight 同一阻塞点）；
+本地三向 build / macOS 单测 / lint 已全绿，真机端到端待账号就绪。
+
+并发实现要点：`SharedAudioRing` 索引用 `Synchronization.Atomic<UInt64>`（acquire/release）
+置于共享映射，免用已弃用的 `OSMemoryBarrier`；`DarwinNotificationCenter` 在最后一个
+handler 取消时移除底层 CF observer，避免 start→stop→start 重复注册导致重复触发。

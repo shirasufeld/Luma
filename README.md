@@ -21,8 +21,9 @@ Picture window on iOS.
   - macOS: microphone via `AVAudioEngine`, **or** system / per-app audio via **Core Audio
     process taps** (needs only the separate "System Audio Recording" permission — *not*
     Screen Recording)
-  - iOS: microphone via `AVAudioEngine` (iOS has no public API to capture other apps'
-    system audio)
+  - iOS: microphone via `AVAudioEngine`, plus **other-app system audio** via a ReplayKit
+    Broadcast Upload Extension (the extension forwards PCM through an App Group; the app
+    transcribes — iOS has no in-process API for other apps' audio)
 - On-device translation with three presets:
   - **Fast** — re-translates the in-progress line as it changes (low-latency model,
     throttled to bound resource use)
@@ -50,15 +51,17 @@ Picture window on iOS.
 | | macOS | iOS (iPhone / iPad) |
 |---|---|---|
 | Microphone capture | ✅ | ✅ |
-| System / other-app audio | ✅ Core Audio process tap | ❌ no public API on iOS |
+| System / other-app audio | ✅ Core Audio process tap | ✅ ReplayKit broadcast extension |
 | Caption surface | Floating `NSPanel` | Picture in Picture |
-| Background captioning | window stays up | mic + PiP continue in background |
+| Background captioning | window stays up | mic / system audio + PiP continue in background |
 | Transcript export | `NSSavePanel` | document picker |
 
-> Capturing **other apps'** audio on iOS would require a ReplayKit Broadcast Upload
-> Extension; it is tracked as a future TODO (see `docs/architecture.md` §未来 TODO / 路线图),
-> not abandoned. iOS Picture in Picture and background audio are device-only capabilities
-> (the Simulator can't run PiP).
+> On iOS, capturing **other apps'** audio uses a ReplayKit Broadcast Upload Extension
+> (`LumaBroadcastExtension`): the user starts a system broadcast, the extension forwards PCM
+> through an App Group, and the app transcribes it — see `docs/architecture.md` §iOS 系统级音频.
+> App Groups + the extension need a paid developer account to run on device (the same blocker
+> as TestFlight); local three-way build, macOS tests, and lint are green. iOS Picture in
+> Picture and background audio are device-only (the Simulator can't run PiP).
 
 ## Building
 
@@ -124,6 +127,7 @@ Key design notes live in:
 |---|---|---|---|
 | Microphone | macOS + iOS | live transcription | first start with mic input |
 | System Audio Recording | macOS only | Core Audio process tap capture | first start with system-audio input |
+| Screen / broadcast | iOS only | ReplayKit broadcast captures other apps' audio | when the user starts the broadcast |
 
 Speech models and translation language packs are downloaded on demand by the system;
 Luma surfaces their status in the Diagnostics tab, where translation model downloads
@@ -136,9 +140,10 @@ can also be triggered.
 - Model download progress is shown as indeterminate (Progress observation is a TODO)
 - Per-app audio capture via `CATapDescription.bundleIDs` (macOS) is experimental on beta
   systems
-- iOS cannot caption **other apps'** audio (platform limitation); it captions microphone
-  audio, so place the device near the audio source. System-wide capture via a ReplayKit
-  Broadcast Upload Extension is a future TODO (`docs/architecture.md` §未来 TODO / 路线图)
+- iOS other-app audio uses a ReplayKit Broadcast Upload Extension; the user must start a
+  system broadcast (the persistent red status bar and manual stop are Apple-mandated).
+  Background keep-alive relies on PiP and is pending on-device confirmation; App Groups +
+  the extension need a paid developer account on device (`docs/architecture.md` §iOS 系统级音频)
 - iOS Picture in Picture and background audio are device-only (not available in the
   Simulator) and pending on-device confirmation
 - System-provided menu bar items follow the launch language; in-app language switching

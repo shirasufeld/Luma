@@ -154,9 +154,10 @@ playbackDelegate:)`，`ios(15.0)`；自绘 `CVPixelBuffer` →
 `UIBackgroundModes=audio` + `AVAudioSession.playAndRecord/.mixWithOthers` 实现后台采集、
 不打断其他 App 播放、字幕浮于其他 App 之上。
 
-**未来 TODO（未放弃）**：跨 App 系统级音频的唯一可能路径是 ReplayKit
-**Broadcast Upload Extension**（独立扩展 + App Group，收 `RPSampleBufferTypeAudioApp`）。
-待解：扩展 ~50MB 内存上限恐跑不动设备端 `SpeechAnalyzer`+`TranslationSession`，
-需内存可行性 spike（或转写/翻译留主 App、扩展仅转发 PCM）；字幕展示可复用现有 iOS PiP。
-详见 `docs/architecture.md` §未来 TODO / 路线图。当前迭代不实现，但
-`AudioInputProviding` 协议边界已预留接入位。
+**已实现**：跨 App 系统级音频经 ReplayKit **Broadcast Upload Extension**
+（`LumaBroadcastExtension` + App Group，收 `RPSampleBufferTypeAudioApp`）。采「扩展仅转发
+PCM、转写/翻译/字幕留主 App」方案，规避扩展 ~50MB 内存上限（扩展零 ML）；字幕复用现有 iOS
+PiP，经 `AudioInputProviding` 协议边界（`BroadcastAudioProvider`）接入，下游零改。架构与
+文件清单见 `docs/architecture.md` §iOS 系统级音频。残留风险：后台保活（仅靠 PiP）待真机
+验证；App Group/appex 真机部署需开发者账号（同 TestFlight 阻塞点）。本地三向 build / macOS
+单测（含 `SharedAudioRingTests`）/ lint 全绿。
