@@ -14,9 +14,12 @@ import Synchronization
 /// ahead of the bytes it refers to and 64-bit values never tear.
 ///
 /// Indices are monotonic byte counters; the live span is `write - read` and
-/// each maps into the ring at `index % capacity`. If the writer laps the reader
-/// (overflow), the reader drops the oldest bytes and resynchronises —
-/// acceptable for live captions where freshness beats completeness.
+/// each maps into the ring at `index % capacity`. `write` refuses chunks that
+/// don't fit, so a healthy writer never laps the reader; the reader still
+/// defends against a span wider than the ring (cursor history left behind by
+/// an earlier session racing a live writer) by dropping the oldest bytes and
+/// resynchronising — acceptable for live captions where freshness beats
+/// completeness.
 ///
 /// `nonisolated` because it is used both from the broadcast extension's
 /// background callbacks and from `BroadcastAudioProvider`'s actor, neither of
@@ -45,48 +48,96 @@ nonisolated final class SharedAudioRing: @unchecked Sendable {
     /// Ring data capacity in bytes (excludes the header).
     let capacity: Int
 
-    /// Opens (or, when `create`, creates and zeroes) the ring at `url`.
+    /// Opens the ring at `url`.
+    ///
+    /// `create: true` (the consumer) readies the ring for a fresh session: a
+    /// missing or invalid file is (re)initialised in place, while an existing
+    /// valid ring keeps its header and monotonic cursors and only fast-forwards
+    /// `readIndex` to `writeIndex`, discarding any stale backlog. Reusing the
+    /// same inode matters: the producer may already have the file mmapped, and
+    /// unlinking/recreating it would strand that mapping on an orphaned inode
+    /// (its writes would silently go nowhere).
+    ///
+    /// `create: false` (the producer) opens an existing ring, validating the
+    /// header before trusting it.
     init(url: URL, capacityBytes: Int, create: Bool) throws {
-        let total = Self.headerSize + capacityBytes
         let openFlags = create ? (O_CREAT | O_RDWR) : O_RDWR
         let fd = open(url.path, openFlags, 0o644)
         guard fd >= 0 else { throw RingError.openFailed }
-
-        if create, ftruncate(fd, off_t(total)) != 0 {
+        var info = stat()
+        guard fstat(fd, &info) == 0 else {
             Darwin.close(fd)
             throw RingError.openFailed
         }
-        var info = stat()
-        guard fstat(fd, &info) == 0, Int(info.st_size) >= Self.headerSize else {
-            Darwin.close(fd)
-            throw RingError.badHeader
-        }
-        let size = create ? total : Int(info.st_size)
-        guard let mapped = mmap(nil, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0),
-            mapped != MAP_FAILED
-        else {
-            Darwin.close(fd)
-            throw RingError.mapFailed
-        }
-
-        self.fd = fd
-        self.base = mapped
-        self.mappedSize = size
 
         if create {
-            mapped.storeBytes(of: Self.magic, toByteOffset: Self.offMagic, as: UInt32.self)
-            mapped.storeBytes(of: Self.version, toByteOffset: Self.offVersion, as: UInt32.self)
-            mapped.storeBytes(of: UInt64(capacityBytes), toByteOffset: Self.offCapacity, as: UInt64.self)
+            let total = Self.headerSize + capacityBytes
+            // A wrong-sized file can't be a valid ring for this capacity;
+            // resize it (fresh zero-byte files land here too).
+            let hadExpectedSize = Int(info.st_size) == total
+            if !hadExpectedSize, ftruncate(fd, off_t(total)) != 0 {
+                Darwin.close(fd)
+                throw RingError.openFailed
+            }
+            guard let mapped = mmap(nil, total, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0),
+                mapped != MAP_FAILED
+            else {
+                Darwin.close(fd)
+                throw RingError.mapFailed
+            }
+            self.fd = fd
+            self.base = mapped
+            self.mappedSize = total
             self.capacity = capacityBytes
-            writeCursor.pointee.store(0, ordering: .relaxed)
-            readCursor.pointee.store(0, ordering: .relaxed)
+
+            let headerValid =
+                hadExpectedSize
+                && mapped.load(fromByteOffset: Self.offMagic, as: UInt32.self) == Self.magic
+                && mapped.load(fromByteOffset: Self.offVersion, as: UInt32.self) == Self.version
+                && mapped.load(fromByteOffset: Self.offCapacity, as: UInt64.self)
+                    == UInt64(capacityBytes)
+            if headerValid {
+                // Keep the producer's cursors monotonic (it may be writing
+                // right now); just drop whatever predates this session.
+                let write = writeCursor.pointee.load(ordering: .acquiring)
+                readCursor.pointee.store(write, ordering: .releasing)
+            } else {
+                mapped.storeBytes(of: Self.magic, toByteOffset: Self.offMagic, as: UInt32.self)
+                mapped.storeBytes(
+                    of: Self.version, toByteOffset: Self.offVersion, as: UInt32.self)
+                mapped.storeBytes(
+                    of: UInt64(capacityBytes), toByteOffset: Self.offCapacity, as: UInt64.self)
+                writeCursor.pointee.store(0, ordering: .relaxed)
+                readCursor.pointee.store(0, ordering: .relaxed)
+            }
         } else {
-            guard mapped.load(fromByteOffset: Self.offMagic, as: UInt32.self) == Self.magic else {
+            let size = Int(info.st_size)
+            guard size >= Self.headerSize else {
+                Darwin.close(fd)
+                throw RingError.badHeader
+            }
+            guard let mapped = mmap(nil, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0),
+                mapped != MAP_FAILED
+            else {
+                Darwin.close(fd)
+                throw RingError.mapFailed
+            }
+            // Trust nothing until the header checks out: a torn/truncated file
+            // must not send reads or writes past the end of the mapping.
+            let declaredCapacity = mapped.load(
+                fromByteOffset: Self.offCapacity, as: UInt64.self)
+            guard mapped.load(fromByteOffset: Self.offMagic, as: UInt32.self) == Self.magic,
+                mapped.load(fromByteOffset: Self.offVersion, as: UInt32.self) == Self.version,
+                declaredCapacity > 0, declaredCapacity <= UInt64(size - Self.headerSize)
+            else {
                 munmap(mapped, size)
                 Darwin.close(fd)
                 throw RingError.badHeader
             }
-            self.capacity = Int(mapped.load(fromByteOffset: Self.offCapacity, as: UInt64.self))
+            self.fd = fd
+            self.base = mapped
+            self.mappedSize = size
+            self.capacity = Int(declaredCapacity)
         }
     }
 
@@ -151,7 +202,10 @@ nonisolated final class SharedAudioRing: @unchecked Sendable {
         return available
     }
 
-    // Cross-process atomic cursors living in the shared mapping.
+    // Cross-process atomic cursors living in the shared mapping. Overlaying
+    // `Atomic<UInt64>` on mmapped bytes sidesteps Swift's formal init/bind
+    // rules, but the type is a single 8-byte trivial storage and the offsets
+    // are 8-byte aligned — exactly the layout the hardware atomics need.
     private var writeCursor: UnsafeMutablePointer<Atomic<UInt64>> {
         base.advanced(by: Self.offWrite).assumingMemoryBound(to: Atomic<UInt64>.self)
     }

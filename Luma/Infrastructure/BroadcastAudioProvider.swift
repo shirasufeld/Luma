@@ -28,8 +28,9 @@ actor BroadcastAudioProvider: AudioInputProviding {
         guard let url = BroadcastAudio.ringURL() else {
             throw BroadcastAudioError.appGroupUnavailable
         }
-        // The consumer owns the ring lifecycle: create (resetting indices) on
-        // start, delete on stop. The extension opens the same file.
+        // The consumer readies the ring for this session: (re)create in place,
+        // dropping any backlog while keeping the inode — the extension may
+        // already have the file mmapped. The extension opens the same file.
         ring = try SharedAudioRing(
             url: url, capacityBytes: BroadcastAudio.ringCapacityBytes, create: true)
 
@@ -53,6 +54,13 @@ actor BroadcastAudioProvider: AudioInputProviding {
     }
 
     func resume() {
+        // The broadcast kept writing while we ignored it; drop that backlog so
+        // resume captions live audio instead of replaying up to a ring's worth
+        // of stale speech (which would also skew the latency estimate).
+        if let ring {
+            ring.read(into: &scratch)
+            scratch.removeAll(keepingCapacity: true)
+        }
         isPaused = false
     }
 
@@ -92,9 +100,10 @@ actor BroadcastAudioProvider: AudioInputProviding {
         continuation = nil
         ring?.close()
         ring = nil
-        if let url = BroadcastAudio.ringURL() {
-            try? FileManager.default.removeItem(at: url)
-        }
+        // The ring file stays behind (1 MiB in the App Group): the extension
+        // may still have it mmapped, and unlinking would strand that mapping on
+        // an orphaned inode — its audio would silently go nowhere. The next
+        // `start()` re-creates over the same inode and drops the backlog.
     }
 }
 

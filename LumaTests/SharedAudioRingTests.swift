@@ -102,6 +102,61 @@ struct SharedAudioRingTests {
         }
     }
 
+    /// Re-creating over an existing valid ring must reuse the inode and keep
+    /// the cursors monotonic — a producer holding an older mapping (like the
+    /// broadcast extension across app sessions) stays connected — while the
+    /// stale backlog is dropped.
+    @Test func createOnExistingRingFastForwardsRead() throws {
+        let url = tempURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let producer = try SharedAudioRing(url: url, capacityBytes: 64, create: true)
+        defer { producer.close() }
+        let stale = [UInt8](repeating: 0xAA, count: 24)
+        #expect(stale.withUnsafeBytes { producer.write($0) } == 24)
+
+        // The consumer starts a fresh session over the same file.
+        let consumer = try SharedAudioRing(url: url, capacityBytes: 64, create: true)
+        defer { consumer.close() }
+        var out = Data()
+        #expect(consumer.read(into: &out) == 0)  // backlog dropped
+
+        // The producer's pre-existing mapping still reaches the new consumer.
+        let fresh: [UInt8] = [1, 2, 3, 4, 5, 6, 7, 8]
+        #expect(fresh.withUnsafeBytes { producer.write($0) } == 8)
+        #expect(consumer.read(into: &out) == 8)
+        #expect(Array(out) == fresh)
+    }
+
+    /// A header that declares more capacity than the file holds must be
+    /// rejected, or reads/writes would run past the end of the mapping.
+    @Test func openRejectsTruncatedFile() throws {
+        let url = tempURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let ring = try SharedAudioRing(url: url, capacityBytes: 128, create: true)
+        ring.close()
+
+        let handle = try FileHandle(forWritingTo: url)
+        try handle.truncate(atOffset: 96)  // header (64) + 32 < declared 128
+        try handle.close()
+        #expect(throws: (any Error).self) {
+            _ = try SharedAudioRing(url: url, capacityBytes: 0, create: false)
+        }
+    }
+
+    @Test func openRejectsWrongVersion() throws {
+        let url = tempURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let ring = try SharedAudioRing(url: url, capacityBytes: 64, create: true)
+        ring.close()
+
+        var data = try Data(contentsOf: url)
+        data[4] &+= 1  // low byte of the little-endian version field
+        try data.write(to: url)
+        #expect(throws: (any Error).self) {
+            _ = try SharedAudioRing(url: url, capacityBytes: 0, create: false)
+        }
+    }
+
     /// Producer and consumer on separate threads: every byte must arrive in
     /// order with none lost — the cross-thread exercise of the atomic cursors
     /// that mirrors the real cross-process writer/reader.
