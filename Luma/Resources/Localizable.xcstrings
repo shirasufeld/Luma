@@ -176,16 +176,8 @@
         }
       }
     },
-    "Download Translation Models…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下载翻译模型…"
-          }
-        }
-      }
+    "Done" : {
+
     },
     "Download required" : {
       "extractionState" : "manual",
@@ -194,6 +186,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "需要下载"
+          }
+        }
+      }
+    },
+    "Download Translation Models…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下载翻译模型…"
           }
         }
       }
@@ -422,6 +425,17 @@
         }
       }
     },
+    "Model: —" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模型：—"
+          }
+        }
+      }
+    },
     "Model: checking" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -473,17 +487,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "模型：就绪"
-          }
-        }
-      }
-    },
-    "Model: —" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "模型：—"
           }
         }
       }
@@ -553,6 +556,9 @@
           }
         }
       }
+    },
+    "Overlay" : {
+
     },
     "Pair unsupported" : {
       "extractionState" : "manual",
@@ -653,17 +659,6 @@
         }
       }
     },
-    "SRT Subtitles…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SRT 字幕…"
-          }
-        }
-      }
-    },
     "Sample transcript line" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -707,6 +702,9 @@
           }
         }
       }
+    },
+    "Show or hide captions in a Picture in Picture window" : {
+
     },
     "Show or hide the floating caption window" : {
       "extractionState" : "manual",
@@ -770,6 +768,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此设备不支持语音转文字。"
+          }
+        }
+      }
+    },
+    "SRT Subtitles…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SRT 字幕…"
           }
         }
       }
