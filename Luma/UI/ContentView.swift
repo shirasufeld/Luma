@@ -80,10 +80,19 @@ struct ContentView: View {
     }
 
     private var sessionView: some View {
+        #if os(iOS)
+        TranscriptSessionView(
+            store: dependencies.store,
+            session: dependencies.session,
+            overlay: dependencies.overlay,
+            exporter: dependencies.exporter,
+            broadcastMonitor: dependencies.broadcastMonitor)
+        #else
         TranscriptSessionView(
             store: dependencies.store,
             session: dependencies.session,
             overlay: dependencies.overlay,
             exporter: dependencies.exporter)
+        #endif
     }
 }

@@ -10,6 +10,10 @@ final class AppDependencies {
     let session: SessionController
     let overlay: SubtitleOverlayController
     let exporter: any TranscriptExporting
+    #if os(iOS)
+    /// Broadcast liveness for the system-audio UI (see `BroadcastStateMonitor`).
+    let broadcastMonitor = BroadcastStateMonitor()
+    #endif
 
     init(
         capabilities: any CapabilityChecking = CapabilityService(),

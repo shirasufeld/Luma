@@ -8,6 +8,9 @@ struct TranscriptSessionView: View {
     let session: SessionController
     var overlay: SubtitleOverlayController?
     var exporter: (any TranscriptExporting)?
+    #if os(iOS)
+    var broadcastMonitor: BroadcastStateMonitor?
+    #endif
 
     @State private var exportError: String?
 
@@ -101,6 +104,28 @@ struct TranscriptSessionView: View {
                     .frame(width: 44, height: 44)
             }
         }
+        broadcastStatusBadge
+    }
+
+    /// Tells the user whether broadcast audio is actually flowing: a running
+    /// session captures nothing until they start the system broadcast, and the
+    /// red system status bar is easy to miss the absence of.
+    @ViewBuilder
+    private var broadcastStatusBadge: some View {
+        if let broadcastMonitor, store.inputKind == .systemAudio {
+            if broadcastMonitor.isBroadcastActive {
+                Label("Broadcasting", systemImage: "dot.radiowaves.left.and.right")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+            } else if store.sessionState == .running {
+                Label(
+                    "Waiting for broadcast — tap the broadcast button to start",
+                    systemImage: "clock"
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
+            }
+        }
     }
     #endif
 
@@ -167,6 +192,13 @@ struct TranscriptSessionView: View {
                 Task {
                     await session.start(
                         languagePair: pair, inputKind: kind, translationMode: mode)
+                    #if os(iOS)
+                    // Preparation failed (state fell back to idle): take the
+                    // optimistically started PiP window down again.
+                    if kind == .systemAudio, store.sessionState != .running {
+                        overlay?.hide()
+                    }
+                    #endif
                 }
             }
         case .running:

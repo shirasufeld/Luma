@@ -121,6 +121,17 @@
         }
       }
     },
+    "Broadcasting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在广播"
+          }
+        }
+      }
+    },
     "Captions" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -871,6 +882,17 @@
         }
       }
     },
+    "System-audio captions need the App Group shared container, which requires running on a device with an Apple Developer Program profile." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "系统音频字幕需要 App Group 共享容器，须在具有 Apple Developer Program 描述文件的真机上运行。"
+          }
+        }
+      }
+    },
     "Takes effect on the next start." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1043,6 +1065,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用系统强调色"
+          }
+        }
+      }
+    },
+    "Waiting for broadcast — tap the broadcast button to start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "等待广播——点击广播按钮开始"
           }
         }
       }
