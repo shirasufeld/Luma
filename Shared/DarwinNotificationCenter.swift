@@ -31,16 +31,20 @@ nonisolated final class DarwinNotificationCenter: @unchecked Sendable {
     /// the underlying Darwin observer is added exactly once per name and removed
     /// when the last handler for that name is cancelled (so a start→stop→start
     /// cycle never leaves a stale observer that double-fires).
+    ///
+    /// The CF add/remove calls happen inside `lock` so they stay ordered with
+    /// the bookkeeping they mirror — otherwise a concurrent observe/cancel pair
+    /// could land its add and remove in the opposite order, leaving live
+    /// handlers with no underlying observer. Both CF calls are thread-safe and
+    /// deliver callbacks asynchronously, so no re-entrancy under the lock.
     @discardableResult
     func observe(_ name: String, handler: @escaping @Sendable () -> Void) -> Token {
         lock.lock()
-        let needsRegister = !registeredNames.contains(name)
+        defer { lock.unlock() }
         let id = UUID()
         handlers[name, default: [:]][id] = handler
-        if needsRegister { registeredNames.insert(name) }
-        lock.unlock()
-
-        if needsRegister {
+        if !registeredNames.contains(name) {
+            registeredNames.insert(name)
             // C callback can't capture context; it references the singleton and
             // fans out by name (which Darwin passes back to us).
             let callback: CFNotificationCallback = { _, _, name, _, _ in
@@ -57,20 +61,15 @@ nonisolated final class DarwinNotificationCenter: @unchecked Sendable {
 
     func cancel(_ token: Token) {
         lock.lock()
+        defer { lock.unlock() }
         handlers[token.name]?[token.id] = nil
-        let nameDrained = handlers[token.name]?.isEmpty ?? true
-        if nameDrained {
-            handlers[token.name] = nil
-            registeredNames.remove(token.name)
-        }
-        lock.unlock()
-
-        if nameDrained {
-            CFNotificationCenterRemoveObserver(
-                CFNotificationCenterGetDarwinNotifyCenter(),
-                Unmanaged.passUnretained(DarwinNotificationCenter.shared).toOpaque(),
-                CFNotificationName(token.name as CFString), nil)
-        }
+        guard handlers[token.name]?.isEmpty ?? true else { return }
+        handlers[token.name] = nil
+        registeredNames.remove(token.name)
+        CFNotificationCenterRemoveObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            Unmanaged.passUnretained(DarwinNotificationCenter.shared).toOpaque(),
+            CFNotificationName(token.name as CFString), nil)
     }
 
     private func fire(_ name: String) {
