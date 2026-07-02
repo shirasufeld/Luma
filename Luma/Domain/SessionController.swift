@@ -195,6 +195,15 @@ actor SessionController {
                     }
                 }
             }
+            // The event stream ended without `stop()` being asked for: the
+            // audio source finished on its own (e.g. the user stopped the
+            // system broadcast from Control Center). Run the normal stop so
+            // the session doesn't sit in "running" with nothing capturing.
+            // Dispatched as its own task because `stop()` awaits `eventTask`
+            // (this very task) draining — awaiting it inline would deadlock.
+            if state == .running || state == .paused {
+                Task { await self.stop() }
+            }
         } catch {
             await failSession(with: error)
         }
@@ -295,6 +304,14 @@ actor SessionController {
         case TranscriptionError.noCompatibleAudioFormat:
             return String(localized: "No compatible audio format for the transcriber.")
         default:
+            #if os(iOS)
+            if case BroadcastAudioError.appGroupUnavailable = error {
+                return String(
+                    localized:
+                        "System-audio captions need the App Group shared container, which requires running on a device with an Apple Developer Program profile."
+                )
+            }
+            #endif
             return error.localizedDescription
         }
     }
