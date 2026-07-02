@@ -5,6 +5,13 @@
 // The App Group and the broadcast extension id are derived from the app bundle
 // id at runtime / via build-setting expansion, so changing the bundle id below
 // is all you need — nothing else has to be edited.
+//
+// HARD CONSTRAINT: LUMA_BUNDLE_ID_EXTENSION must be exactly
+// LUMA_BUNDLE_ID_APP + ".BroadcastExtension". Both the runtime derivation
+// (BroadcastShared strips that suffix to recover the app id) and the
+// extension's entitlements ($(PRODUCT_BUNDLE_IDENTIFIER:base) drops the last
+// dot-component) depend on that shape. Anything else makes the two processes
+// derive different App Groups — broadcast audio then silently never arrives.
 
 // DEVELOPMENT_TEAM = YOURTEAMID
 // LUMA_BUNDLE_ID_APP = com.example.Luma
