@@ -17,6 +17,7 @@ final class SampleHandler: RPBroadcastSampleHandler {
     private var ring: SharedAudioRing?
     private var converter: AVAudioConverter?
     private var sourceFormat: AVAudioFormat?
+    private var heartbeat: DispatchSourceTimer?
     private let canonicalFormat = BroadcastAudio.makeCanonicalFormat()
 
     override func broadcastStarted(withSetupInfo setupInfo: [String: NSObject]?) {
@@ -32,6 +33,19 @@ final class SampleHandler: RPBroadcastSampleHandler {
             ring = opened
             lock.unlock()
         }
+        // Liveness heartbeat: `.finished` never fires if this process dies
+        // uncleanly, so the app-side observers watch for this going quiet.
+        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+        timer.schedule(
+            deadline: .now(), repeating: BroadcastAudio.heartbeatInterval, leeway: .milliseconds(500)
+        )
+        timer.setEventHandler {
+            DarwinNotificationCenter.shared.post(BroadcastAudio.Notification.heartbeat)
+        }
+        timer.resume()
+        lock.lock()
+        heartbeat = timer
+        lock.unlock()
         DarwinNotificationCenter.shared.post(BroadcastAudio.Notification.started)
     }
 
@@ -55,6 +69,8 @@ final class SampleHandler: RPBroadcastSampleHandler {
     override func broadcastFinished() {
         DarwinNotificationCenter.shared.post(BroadcastAudio.Notification.finished)
         lock.lock()
+        heartbeat?.cancel()
+        heartbeat = nil
         ring?.close()
         ring = nil
         lock.unlock()

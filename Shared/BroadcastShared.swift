@@ -66,6 +66,14 @@ nonisolated enum BroadcastAudio {
             .appendingPathComponent(ringFileName)
     }
 
+    /// The extension posts `Notification.heartbeat` on this cadence while the
+    /// broadcast runs. Observers that saw the broadcast alive treat a silence
+    /// longer than `livenessTimeout` as the extension having died without a
+    /// graceful `broadcastFinished` (jetsam kill, crash) — `.finished` never
+    /// arrives in that case, so liveness is the only way to notice.
+    static let heartbeatInterval: TimeInterval = 2
+    static let livenessTimeout: TimeInterval = 7
+
     /// Darwin notification names signalling broadcast lifecycle and new audio.
     /// Namespaced by the host app id (unique per install) and identical in both
     /// processes since both derive the same id.
@@ -73,5 +81,6 @@ nonisolated enum BroadcastAudio {
         static var started: String { "\(BroadcastAudio.hostAppBundleID).broadcast.started" }
         static var finished: String { "\(BroadcastAudio.hostAppBundleID).broadcast.finished" }
         static var audio: String { "\(BroadcastAudio.hostAppBundleID).broadcast.audio" }
+        static var heartbeat: String { "\(BroadcastAudio.hostAppBundleID).broadcast.heartbeat" }
     }
 }

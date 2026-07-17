@@ -20,6 +20,9 @@ actor BroadcastAudioProvider: AudioInputProviding {
     private var continuation: AsyncStream<AudioChunk>.Continuation?
     private var audioToken: DarwinNotificationCenter.Token?
     private var finishToken: DarwinNotificationCenter.Token?
+    private var heartbeatToken: DarwinNotificationCenter.Token?
+    private var watchdog: Task<Void, Never>?
+    private var lastAlive: ContinuousClock.Instant?
     private var isPaused = false
     private var scratch = Data()
 
@@ -46,6 +49,12 @@ actor BroadcastAudioProvider: AudioInputProviding {
             [weak self] in
             Task { await self?.finishStream() }
         }
+        heartbeatToken = DarwinNotificationCenter.shared.observe(
+            BroadcastAudio.Notification.heartbeat
+        ) { [weak self] in
+            Task { await self?.noteAlive() }
+        }
+        startWatchdog()
         return stream
     }
 
@@ -68,8 +77,34 @@ actor BroadcastAudioProvider: AudioInputProviding {
         teardown()
     }
 
+    /// A dead extension posts neither `.finished` (only its graceful stop
+    /// does) nor further heartbeats. Once the broadcast has been seen alive,
+    /// a heartbeat silence longer than the timeout means the producer is
+    /// gone: end the stream so the session stops visibly instead of sitting
+    /// in "running" with nothing capturing.
+    private func startWatchdog() {
+        lastAlive = nil
+        watchdog = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(BroadcastAudio.heartbeatInterval))
+                if Task.isCancelled { return }
+                if let lastAlive,
+                    ContinuousClock.now - lastAlive > .seconds(BroadcastAudio.livenessTimeout)
+                {
+                    finishStream()
+                    return
+                }
+            }
+        }
+    }
+
+    private func noteAlive() {
+        lastAlive = .now
+    }
+
     /// Drains all pending PCM and yields it as one chunk per notification.
     private func drain() {
+        noteAlive()
         guard !isPaused, let ring, let continuation else { return }
         let byteCount = ring.read(into: &scratch)
         let frameCount = byteCount / MemoryLayout<Float>.size
@@ -94,8 +129,13 @@ actor BroadcastAudioProvider: AudioInputProviding {
     private func teardown() {
         if let audioToken { DarwinNotificationCenter.shared.cancel(audioToken) }
         if let finishToken { DarwinNotificationCenter.shared.cancel(finishToken) }
+        if let heartbeatToken { DarwinNotificationCenter.shared.cancel(heartbeatToken) }
         audioToken = nil
         finishToken = nil
+        heartbeatToken = nil
+        watchdog?.cancel()
+        watchdog = nil
+        lastAlive = nil
         continuation?.finish()
         continuation = nil
         ring?.close()
