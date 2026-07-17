@@ -5,7 +5,13 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
+            "value" : "%1$@ → %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
             "value" : "%1$@ → %2$@"
           }
         }
@@ -188,7 +194,15 @@
       }
     },
     "Done" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
+          }
+        }
+      }
     },
     "Download required" : {
       "extractionState" : "manual",
@@ -569,7 +583,15 @@
       }
     },
     "Overlay" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "悬浮字幕"
+          }
+        }
+      }
     },
     "Pair unsupported" : {
       "extractionState" : "manual",
@@ -715,7 +737,15 @@
       }
     },
     "Show or hide captions in a Picture in Picture window" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示或隐藏画中画字幕窗口"
+          }
+        }
+      }
     },
     "Show or hide the floating caption window" : {
       "extractionState" : "manual",
@@ -1076,6 +1106,61 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "等待广播——点击广播按钮开始"
+          }
+        }
+      }
+    },
+    "Open Privacy Settings…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开隐私设置…"
+          }
+        }
+      }
+    },
+    "No Captions Yet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还没有字幕"
+          }
+        }
+      }
+    },
+    "Press Start to begin live captions." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按下「开始」即可开始实时字幕。"
+          }
+        }
+      }
+    },
+    "Start System Audio Broadcast" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始系统音频广播"
+          }
+        }
+      }
+    },
+    "Opens the system broadcast picker." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开系统广播选择器。"
           }
         }
       }
