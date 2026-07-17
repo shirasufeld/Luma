@@ -8,8 +8,13 @@
 		<string>com.apple.broadcast-services-upload</string>
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).SampleHandler</string>
-		<!-- Sample-buffer mode is required; ASC rejects the appex if this key is
-		     missing (RPBroadcastProcessMode "not specified"). -->
+		<!-- Sample-buffer mode is required, in BOTH locations: ASC's current
+		     validator (and the Xcode 27 template) want it directly under
+		     NSExtension, while the historically documented spot is inside
+		     NSExtensionAttributes. Missing the former fails upload with
+		     RPBroadcastProcessMode "not specified". -->
+		<key>RPBroadcastProcessMode</key>
+		<string>RPBroadcastProcessModeSampleBuffer</string>
 		<key>NSExtensionAttributes</key>
 		<dict>
 			<key>RPBroadcastProcessMode</key>
