@@ -113,6 +113,42 @@ struct SessionControllerTests {
         await controller.stop()
     }
 
+    @Test func stopDrainsQueuedTranslationsBeforeReturning() async {
+        let (store, controller) = makeController(
+            events: [
+                .finalized(makeSegment("one", start: 0, end: 1)),
+                .finalized(makeSegment("two", start: 1, end: 2)),
+                .finalized(makeSegment("three", start: 2, end: 3)),
+            ],
+            translator: MockTranslator(delay: .milliseconds(80)))
+
+        await controller.start(languagePair: .default, inputKind: .microphone)
+        let arrived = await waitUntil { store.entries.count == 3 }
+        #expect(arrived)
+        await controller.stop()
+        // stop() waits for the translation queue to drain; nothing may still
+        // be pending once it returns.
+        let allTranslated = store.entries.allSatisfy { entry in
+            if case .translated = entry.translation { return true }
+            return false
+        }
+        #expect(allTranslated, "queued translations must finish before stop() returns")
+    }
+
+    @Test func staleVolatileTranslationIsDiscarded() {
+        let store = SessionStore()
+        store.applyVolatile(
+            text: AttributedString("hello"),
+            range: CMTimeRange(
+                start: .zero, end: CMTime(seconds: 1, preferredTimescale: 600)),
+            latency: nil)
+        store.applyFinalized(makeSegment("hello", start: 0, end: 1), latency: nil)
+        // A translation that was in flight when the line finalized must not
+        // resurrect the dismissed volatile line's translation.
+        store.applyVolatileTranslation("«stale»")
+        #expect(store.volatileTranslation == nil)
+    }
+
     @Test func startIsIgnoredWhileRunning() async {
         let (store, controller) = makeController(events: [])
         await controller.start(languagePair: .default, inputKind: .microphone)

@@ -90,18 +90,26 @@ actor MockTranscriber: TranscriptionProviding {
 }
 
 /// Translator that wraps text in guillemets so tests can assert the mapping.
+/// An optional per-call delay simulates a slow model for drain-order tests.
 actor MockTranslator: TranslationProviding {
     private let availability: TranslationAvailability
+    private let delay: Duration
 
-    init(availability: TranslationAvailability = .installed) {
+    init(availability: TranslationAvailability = .installed, delay: Duration = .zero) {
         self.availability = availability
+        self.delay = delay
     }
 
     func setLanguagePair(
         source: Locale.Language, target: Locale.Language, mode: TranslationMode
     ) async -> TranslationAvailability { availability }
 
-    func translate(_ text: String) async throws -> String { "«\(text)»" }
+    func translate(_ text: String) async throws -> String {
+        if delay > .zero {
+            try await Task.sleep(for: delay)
+        }
+        return "«\(text)»"
+    }
 }
 
 // MARK: - Shared helpers

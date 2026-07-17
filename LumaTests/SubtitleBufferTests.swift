@@ -69,6 +69,21 @@ struct SubtitleBufferTests {
         #expect(buffer.entries[1].translation == .translated("二"))
     }
 
+    @Test func dedupeWindowIsBounded() {
+        var buffer = SubtitleBuffer()
+        buffer.applyFinalized(makeSegment("edge", start: 0, end: 1))
+        for index in 1...8 {
+            buffer.applyFinalized(
+                makeSegment("line \(index)", start: Double(index), end: Double(index) + 1))
+        }
+        // Eight appends later the first segment has left the dedupe window;
+        // an identical range+text arrival counts as new again. Documents the
+        // intentional window size — a silent change to it fails here.
+        let reapplied = buffer.applyFinalized(makeSegment("edge", start: 0, end: 1))
+        #expect(reapplied)
+        #expect(buffer.entries.count == 10)
+    }
+
     @Test func clearRemovesEverything() {
         var buffer = SubtitleBuffer()
         buffer.applyFinalized(makeSegment("x", start: 0, end: 1))
