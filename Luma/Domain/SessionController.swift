@@ -241,6 +241,10 @@ actor SessionController {
             if Task.isCancelled { break }
             guard text != lastTranslated else { continue }
             if let translated = try? await translation.translate(text) {
+                // `stop()`/`failSession()` cancel without awaiting this worker;
+                // a translate in flight at that moment must not land its stale
+                // result in the next session's volatile line.
+                if Task.isCancelled { break }
                 lastTranslated = text
                 await store.applyVolatileTranslation(translated)
             }
