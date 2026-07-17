@@ -56,6 +56,17 @@ struct TranscriptSessionView: View {
         } message: {
             Text(exportError ?? "")
         }
+        #if os(iOS)
+        // The caption PiP window is started up front for system-audio
+        // sessions (it keeps Luma alive in the background); take it down
+        // symmetrically when the session ends — including the broadcast
+        // ending on its own from Control Center.
+        .onChange(of: store.sessionState) {
+            if store.sessionState == .idle, store.inputKind == .systemAudio {
+                overlay?.hide()
+            }
+        }
+        #endif
     }
 
     // MARK: - Controls
@@ -242,7 +253,27 @@ struct TranscriptSessionView: View {
 
     // MARK: - Transcript
 
+    @ViewBuilder
     private var transcriptList: some View {
+        if store.entries.isEmpty && store.volatileText == nil {
+            // A blank scroll view on first launch reads as broken; tell the
+            // user the app is ready (or already listening) instead.
+            ContentUnavailableView {
+                Label("No Captions Yet", systemImage: "captions.bubble")
+            } description: {
+                if store.sessionState == .idle {
+                    Text("Press Start to begin live captions.")
+                } else {
+                    Text("Listening…")
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            transcriptScroll
+        }
+    }
+
+    private var transcriptScroll: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 10) {
@@ -315,14 +346,24 @@ struct TranscriptSessionView: View {
             if let latency = store.latency,
                 store.sessionState == .running || store.sessionState == .paused
             {
-                Label(String(format: "%.1f s", latency), systemImage: "timer")
-                    .monospacedDigit()
+                // POSIX locale: a fixed decimal point for a technical readout,
+                // independent of the device region (the app language override
+                // doesn't reach String(format:)).
+                Label(
+                    String(format: "%.1f s", locale: Locale(identifier: "en_US_POSIX"), latency),
+                    systemImage: "timer"
+                )
+                .monospacedDigit()
             }
             Spacer()
             if let message = store.errorMessage {
+                // This is the one channel that says why a session stopped;
+                // never truncate away the actionable part.
                 Text(message)
                     .foregroundStyle(.red)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+                    .help(message)
             }
             Text(
                 "\(store.languagePair.transcriptionLocale.identifier) → \(store.languagePair.translationTarget.minimalIdentifier)"

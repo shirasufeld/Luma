@@ -1,5 +1,9 @@
 import SwiftUI
 
+#if os(iOS)
+import UIKit
+#endif
+
 /// Read-only diagnostics panel showing permission and model availability for
 /// the active language pair. Temporary home in the main window until the
 /// full workbench UI lands.
@@ -10,12 +14,20 @@ struct CapabilityPanel: View {
     @State private var snapshot = CapabilitySnapshot()
     @State private var isLoading = true
     @State private var isDownloadingTranslation = false
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         Form {
             Section("Permissions") {
                 row("Microphone", status: permissionLabel(snapshot.microphone))
                 row("System Audio Capture", status: permissionLabel(snapshot.systemAudioCapture))
+                // A denied permission can only be fixed in the system
+                // settings; without a way there the app just looks broken.
+                if snapshot.microphone == .denied, let url = privacySettingsURL {
+                    Button("Open Privacy Settings…") {
+                        openURL(url)
+                    }
+                }
             }
             Section("Models") {
                 row(
@@ -51,9 +63,21 @@ struct CapabilityPanel: View {
                 }
             }
         }
-        .task {
+        .task(id: languagePair) {
+            // Re-check whenever the selected language pair changes; a bare
+            // `.task` runs once and would keep showing the previous pair's
+            // model status.
+            isDownloadingTranslation = false
             await refresh()
         }
+    }
+
+    private var privacySettingsURL: URL? {
+        #if os(iOS)
+        URL(string: UIApplication.openSettingsURLString)
+        #else
+        URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
+        #endif
     }
 
     private func refresh() async {
