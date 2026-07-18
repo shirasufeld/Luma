@@ -10,6 +10,9 @@ actor SessionController {
     private let transcription: any TranscriptionProviding
     private let translation: any TranslationProviding
     private let audioProviderFactory: @Sendable (AudioInputKind) -> any AudioInputProviding
+    /// Upper bound on waiting for the transcriber to finalize during `stop()`;
+    /// past it the transcriber is cancelled so the session always reaches idle.
+    private let stopTimeout: Duration
 
     private var audioProvider: (any AudioInputProviding)?
     private var eventTask: Task<Void, Never>?
@@ -40,13 +43,15 @@ actor SessionController {
         capabilities: any CapabilityChecking,
         transcription: any TranscriptionProviding,
         translation: any TranslationProviding,
-        audioProviderFactory: @escaping @Sendable (AudioInputKind) -> any AudioInputProviding
+        audioProviderFactory: @escaping @Sendable (AudioInputKind) -> any AudioInputProviding,
+        stopTimeout: Duration = .seconds(10)
     ) {
         self.store = store
         self.capabilities = capabilities
         self.transcription = transcription
         self.translation = translation
         self.audioProviderFactory = audioProviderFactory
+        self.stopTimeout = stopTimeout
     }
 
     // MARK: - Controls
@@ -143,11 +148,21 @@ actor SessionController {
 
         await audioProvider?.stop()
         audioProvider = nil
+        // Bounded finish: a transcriber whose finalize hangs (e.g. it never
+        // received audio) must not strand the session in `.stopping`.
+        let transcription = self.transcription
+        let finishTask = Task { try await transcription.finish() }
+        let stopWatchdog = Task { [stopTimeout] in
+            try? await Task.sleep(for: stopTimeout)
+            guard !Task.isCancelled else { return }
+            await transcription.cancel()
+        }
         do {
-            try await transcription.finish()
+            try await finishTask.value
         } catch {
             await transcription.cancel()
         }
+        stopWatchdog.cancel()
         // Let the event task drain remaining finalized results.
         _ = await eventTask?.value
         eventTask = nil

@@ -1,6 +1,7 @@
 import AVFAudio
 import Foundation
 import Speech
+import os
 
 /// Live transcription built on the macOS 26+ `SpeechAnalyzer` pipeline.
 ///
@@ -10,10 +11,17 @@ import Speech
 /// macOS 26) and pumped into the analyzer's input sequence; transcriber
 /// results are mapped to domain `TranscriptEvent`s.
 actor SpeechAnalyzerTranscriber: TranscriptionProviding {
+    /// `finalizeAndFinishThroughEndOfInput()` can fail to return (observed
+    /// when the analyzer received no audio at all); after this long the
+    /// analyzer is cancelled instead so `finish()` always completes.
+    private static let finalizeTimeout: Duration = .seconds(5)
+
+    private let logger = BroadcastAudio.makeLogger(category: "Transcriber")
     private var transcriber: SpeechTranscriber?
     private var analyzer: SpeechAnalyzer?
     private var inputContinuation: AsyncStream<AnalyzerInput>.Continuation?
     private var pumpTask: Task<Void, Never>?
+    private var fedInputCount = 0
 
     func prepare(
         locale: Locale,
@@ -83,6 +91,7 @@ actor SpeechAnalyzerTranscriber: TranscriptionProviding {
         let (inputSequence, inputContinuation) = AsyncStream.makeStream(
             of: AnalyzerInput.self, bufferingPolicy: .unbounded)
         self.inputContinuation = inputContinuation
+        fedInputCount = 0
 
         let analyzer = SpeechAnalyzer(modules: [transcriber])
         self.analyzer = analyzer
@@ -124,8 +133,29 @@ actor SpeechAnalyzerTranscriber: TranscriptionProviding {
         pumpTask = nil
         inputContinuation?.finish()
         inputContinuation = nil
-        try await analyzer?.finalizeAndFinishThroughEndOfInput()
-        analyzer = nil
+        guard let analyzer else { return }
+
+        // With zero audio fed, finalize never returns — cancel instead.
+        if fedInputCount == 0 {
+            logger.info("finish: no audio was fed, cancelling instead of finalizing")
+            await analyzer.cancelAndFinishNow()
+            self.analyzer = nil
+            return
+        }
+        // Belt and braces: even with audio fed, never let a wedged finalize
+        // hang the session's stop path.
+        let watchdog = Task { [logger] in
+            try? await Task.sleep(for: Self.finalizeTimeout)
+            guard !Task.isCancelled else { return }
+            logger.error("finish: finalize timed out, cancelling the analyzer")
+            await analyzer.cancelAndFinishNow()
+        }
+        defer {
+            watchdog.cancel()
+            self.analyzer = nil
+        }
+        try await analyzer.finalizeAndFinishThroughEndOfInput()
+        logger.info("finish: finalized after \(self.fedInputCount, privacy: .public) inputs")
     }
 
     func cancel() async {
@@ -142,14 +172,28 @@ actor SpeechAnalyzerTranscriber: TranscriptionProviding {
         converter: any PCMAnalyzerInputConverting,
         into continuation: AsyncStream<AnalyzerInput>.Continuation
     ) async {
+        var conversionFailures = 0
         for await chunk in audio {
             if Task.isCancelled { break }
-            guard let inputs = try? converter.makeInputs(from: chunk) else { break }
-            for input in inputs {
-                continuation.yield(input)
+            do {
+                for input in try converter.makeInputs(from: chunk) {
+                    continuation.yield(input)
+                    fedInputCount += 1
+                }
+            } catch {
+                // One bad chunk must not end the session's entire input feed.
+                conversionFailures += 1
+                if conversionFailures == 1 || conversionFailures.isMultiple(of: 100) {
+                    logger.error(
+                        """
+                        pump: conversion failed (\(error, privacy: .public)) \
+                        count=\(conversionFailures, privacy: .public)
+                        """)
+                }
             }
         }
         continuation.finish()
+        logger.info("pump exited after feeding \(self.fedInputCount, privacy: .public) inputs")
     }
 
     private func makeConverter(analyzerFormat: AVAudioFormat) -> any PCMAnalyzerInputConverting {

@@ -149,6 +149,31 @@ struct SessionControllerTests {
         #expect(store.volatileTranslation == nil)
     }
 
+    @Test func stopCompletesWhenTranscriberFinishHangs() async {
+        // Field bug: with systemAudio selected and no broadcast ever started,
+        // the analyzer receives zero audio and finalize never returns — stop()
+        // must still reach idle via its timeout.
+        let store = SessionStore()
+        let transcriber = HangingTranscriber()
+        let controller = SessionController(
+            store: store,
+            capabilities: MockCapabilities(),
+            transcription: transcriber,
+            translation: MockTranslator(),
+            audioProviderFactory: { _ in MockAudioProvider() },
+            stopTimeout: .milliseconds(200))
+
+        await controller.start(languagePair: .default, inputKind: .microphone)
+        #expect(store.sessionState == .running)
+        await controller.stop()
+        #expect(store.sessionState == .idle)
+        #expect(await transcriber.cancelled)
+
+        // A second stop on the already-idle session must be a no-op.
+        await controller.stop()
+        #expect(store.sessionState == .idle)
+    }
+
     @Test func startIsIgnoredWhileRunning() async {
         let (store, controller) = makeController(events: [])
         await controller.start(languagePair: .default, inputKind: .microphone)

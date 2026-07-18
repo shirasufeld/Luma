@@ -89,6 +89,46 @@ actor MockTranscriber: TranscriptionProviding {
     }
 }
 
+/// Transcriber whose `finish()` hangs until `cancel()` releases it — models
+/// `finalizeAndFinishThroughEndOfInput()` never returning (zero-audio case) so
+/// tests can prove the stop path is bounded.
+actor HangingTranscriber: TranscriptionProviding {
+    private var eventContinuation: AsyncThrowingStream<TranscriptEvent, any Error>.Continuation?
+    private var finishContinuation: CheckedContinuation<Void, Never>?
+    private(set) var cancelled = false
+
+    func prepare(
+        locale: Locale,
+        onModelState: @escaping @Sendable (TranscriptionModelState) -> Void
+    ) async throws -> Locale {
+        onModelState(.ready)
+        return locale
+    }
+
+    func start(
+        consuming audio: AsyncStream<AudioChunk>
+    ) async throws -> AsyncThrowingStream<TranscriptEvent, any Error> {
+        let (stream, continuation) = AsyncThrowingStream.makeStream(
+            of: TranscriptEvent.self, throwing: (any Error).self)
+        eventContinuation = continuation
+        return stream
+    }
+
+    func finish() async throws {
+        await withCheckedContinuation { continuation in
+            finishContinuation = continuation
+        }
+    }
+
+    func cancel() async {
+        cancelled = true
+        finishContinuation?.resume()
+        finishContinuation = nil
+        eventContinuation?.finish()
+        eventContinuation = nil
+    }
+}
+
 /// Translator that wraps text in guillemets so tests can assert the mapping.
 /// An optional per-call delay simulates a slow model for drain-order tests.
 actor MockTranslator: TranslationProviding {
