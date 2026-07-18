@@ -39,7 +39,13 @@ Please test:
    turn on Reduce Transparency and confirm the solid fallback
 6. TXT and SRT export: timecodes should match real audio timing
 7. In-app language switching (System / English / 简体中文) without relaunch
-8. Diagnostics tab: speech model and translation language pack download status
+8. Settings › Diagnostics: speech model and translation language pack status;
+   the System Audio Capture row should flip to "Working" after a successful
+   system-audio session (revoking the permission in System Settings should
+   flip it to "Last capture failed" on the next attempt)
+9. Toolbar language menu (transcribe / translate-to / mode) stays in sync
+   with Settings › General; input source and language pair survive relaunch
+10. Audio level meter in the status bar moves while capturing
 
 Known issues:
 - Model download progress is shown as indeterminate (no percentage)
@@ -71,6 +77,14 @@ Please test:
 8. TXT and SRT export via the document picker
 9. In-app language switching (System / English / 简体中文) without relaunch
 10. iPhone and iPad layouts, rotation
+11. With System Audio selected and NO broadcast started: press Start, then
+    Stop — the session must return to Idle within a few seconds (no stuck
+    "Stopping")
+12. The audio level meter in the status bar moves while audio is captured;
+    if the Broadcasting badge is green but the meter stays flat, captions
+    cannot appear — report this combination (it localizes the fault)
+13. First-run guidance: with System Audio selected while idle, the empty
+    state shows the three-step broadcast guide with a broadcast button
 
 Known issues:
 - Model download progress is shown as indeterminate (no percentage)
@@ -145,11 +159,18 @@ codesign -d --entitlements - --xml \
 ## 剩余风险与待办
 
 - [x] 注册 Apple Developer Program(2026-07 完成)
-- [ ] **Xcode 登录账号 + 生成开发证书**(本机钥匙串当前无签名证书)——签名构建的前置
+- [x] **Xcode 登录账号 + 生成开发证书**(2026-07 完成)
 - [ ] **macOS sandbox 下人工功能验证**:麦克风转写、系统音频 process tap(TCC 弹窗)、
       模型下载、导出保存需真人完整过一遍
 - [ ] **iOS 真机人工验证**:广播扩展端到端、PiP、后台采集、扩展意外终止后的行为
       (此前受无付费账号阻塞,现可执行)
+- [ ] **iOS「广播中无字幕」现场诊断**(build 2 带全链路插桩):Console.app 连真机,
+      过滤 `subsystem:io.github.shirasufeld.Luma`(勾选 Include Info/Debug)。
+      判读:`BroadcastExtension` 类目的一次性 `source format:` 行给出真实源格式;
+      每 2s 的 `heartbeat received=… forwarded=… dropped=…` 行——
+      forwarded>0 且无字幕 ⇒ app 侧(看 `Transcriber` 类目);dropped>0 ⇒
+      `dropped sample (原因)` 直接点名;received=0 ⇒ 该内容不产生 `.audioApp`。
+      免工具判读:广播徽标绿 + 电平计在动 + 无字幕 ⇒ 转录侧;电平计平直 ⇒ 生产端
 - [ ] **干净环境验证**:非开发机(或本机新建用户)启动 Release app,确认首启权限
       弹窗与 icon 显示正常
 - [ ] **Beta Xcode 构建的接受度**:本项目必须用 Xcode 27 beta 编译(macOS/iOS 27 API)。
