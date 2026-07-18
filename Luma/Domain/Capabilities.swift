@@ -1,10 +1,22 @@
 import Foundation
 
-/// Authorization state for a system permission (microphone, system audio capture).
+/// Authorization state for a system permission (microphone).
 nonisolated enum PermissionState: Sendable, Equatable {
     case notDetermined
     case granted
     case denied
+}
+
+/// Outcome-based status for system-audio capture.
+///
+/// macOS has no public API to query the "System Audio Recording" TCC state
+/// (the prompt fires on first tap start), and the iOS broadcast path has no
+/// permission concept at all — so the app records how the most recent capture
+/// attempt ended and Diagnostics reports that, in non-permission wording.
+nonisolated enum SystemAudioCaptureStatus: String, Sendable, Equatable {
+    case notAttempted
+    case working
+    case failed
 }
 
 /// Whether on-device transcription is possible for a locale, and whether its
@@ -34,8 +46,6 @@ nonisolated struct CapabilitySnapshot: Sendable, Equatable {
     var microphone: PermissionState = .notDetermined
     var transcription: TranscriptionAvailability = .unavailableOnDevice
     var translation: TranslationAvailability = .unsupported
-    /// System audio capture permission has no query API; the system prompts on
-    /// first use of a tap-backed aggregate device, so this stays `notDetermined`
-    /// until a capture attempt succeeds or fails.
-    var systemAudioCapture: PermissionState = .notDetermined
+    /// Last-known outcome of a system-audio capture start (macOS tap path).
+    var systemAudioCapture: SystemAudioCaptureStatus = .notAttempted
 }

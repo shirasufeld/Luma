@@ -11,6 +11,10 @@ nonisolated protocol CapabilityChecking: Sendable {
     /// Prompts for microphone access if not determined yet.
     func requestMicrophonePermission() async -> PermissionState
 
+    /// Last-known outcome of a system-audio capture start (no query API
+    /// exists for the underlying TCC; see `SystemAudioCaptureStatus`).
+    func systemAudioCaptureStatus() -> SystemAudioCaptureStatus
+
     /// Transcription support and asset state for a locale.
     func transcriptionAvailability(for locale: Locale) async -> TranscriptionAvailability
 

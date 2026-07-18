@@ -115,8 +115,11 @@ actor SystemAudioTapProvider: AudioInputProviding {
                 throw SystemAudioCaptureError.deviceStartFailed(status)
             }
             isCapturing = true
+            // Diagnostics can't query the TCC; record the outcome instead.
+            SystemAudioCaptureStatusRecorder.record(.working)
             return stream
         } catch {
+            SystemAudioCaptureStatusRecorder.record(.failed)
             teardown()
             throw error
         }

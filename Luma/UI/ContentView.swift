@@ -52,9 +52,16 @@ struct ContentView: View {
                 sessionTab
             }
             Tab("Diagnostics", systemImage: "checklist") {
+                #if os(iOS)
+                CapabilityPanel(
+                    capabilities: dependencies.capabilities,
+                    languagePair: dependencies.store.languagePair,
+                    broadcastMonitor: dependencies.broadcastMonitor)
+                #else
                 CapabilityPanel(
                     capabilities: dependencies.capabilities,
                     languagePair: dependencies.store.languagePair)
+                #endif
             }
         }
     }

@@ -10,17 +10,32 @@ import UIKit
 struct CapabilityPanel: View {
     let capabilities: any CapabilityChecking
     var languagePair: LanguagePair = .default
+    #if os(iOS)
+    /// Live broadcast state for the system-audio row — on iOS system audio
+    /// arrives via the broadcast extension, which has no permission concept.
+    var broadcastMonitor: BroadcastStateMonitor? = nil
+    #endif
 
     @State private var snapshot = CapabilitySnapshot()
     @State private var isLoading = true
     @State private var isDownloadingTranslation = false
     @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Form {
             Section("Permissions") {
                 row("Microphone", status: permissionLabel(snapshot.microphone))
-                row("System Audio Capture", status: permissionLabel(snapshot.systemAudioCapture))
+                #if os(macOS)
+                row("System Audio Capture", status: systemAudioLabel(snapshot.systemAudioCapture))
+                #else
+                if let broadcastMonitor {
+                    row(
+                        "System Audio Broadcast",
+                        status: broadcastMonitor.isBroadcastActive
+                            ? ("Active", .green) : ("Not running", .secondary))
+                }
+                #endif
                 // A denied permission can only be fixed in the system
                 // settings; without a way there the app just looks broken.
                 if snapshot.microphone == .denied, let url = privacySettingsURL {
@@ -43,6 +58,13 @@ struct CapabilityPanel: View {
                         isDownloadingTranslation = true
                     }
                     .disabled(isDownloadingTranslation)
+                }
+            }
+            Section {
+                // Statuses can change outside the app (System Settings, model
+                // downloads); give the user a way to re-check on demand.
+                Button("Refresh") {
+                    Task { await refresh() }
                 }
             }
         }
@@ -70,6 +92,12 @@ struct CapabilityPanel: View {
             isDownloadingTranslation = false
             await refresh()
         }
+        .onChange(of: scenePhase) {
+            // The user may have just granted a permission in System Settings.
+            if scenePhase == .active {
+                Task { await refresh() }
+            }
+        }
     }
 
     private var privacySettingsURL: URL? {
@@ -85,6 +113,7 @@ struct CapabilityPanel: View {
         defer { isLoading = false }
         var next = CapabilitySnapshot()
         next.microphone = capabilities.microphonePermission()
+        next.systemAudioCapture = capabilities.systemAudioCaptureStatus()
         next.transcription = await capabilities.transcriptionAvailability(
             for: languagePair.transcriptionLocale)
         next.translation = await capabilities.translationAvailability(
@@ -104,6 +133,18 @@ struct CapabilityPanel: View {
         case .granted: ("Granted", .green)
         case .denied: ("Denied", .red)
         case .notDetermined: ("Not determined", .secondary)
+        }
+    }
+
+    private func systemAudioLabel(
+        _ status: SystemAudioCaptureStatus
+    ) -> (LocalizedStringKey, Color) {
+        // Deliberately non-permission wording: the underlying TCC cannot be
+        // queried, only the outcome of the last capture attempt is known.
+        switch status {
+        case .notAttempted: ("Not yet attempted — starts on first use", .secondary)
+        case .working: ("Working", .green)
+        case .failed: ("Last capture failed", .red)
         }
     }
 

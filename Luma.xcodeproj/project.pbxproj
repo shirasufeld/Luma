@@ -45,7 +45,7 @@
 		1A0000000000000000000005 /* Luma.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Luma.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A0000000000000000000006 /* LumaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LumaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A0000000000000000000060 /* LumaBroadcastExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LumaBroadcastExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		1A0000000000000000000070 /* Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = BuildConfig/Project.xcconfig; sourceTree = "<group>"; };
+		1A0000000000000000000070 /* BuildConfig/Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = BuildConfig/Project.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -122,7 +122,7 @@
 		1A0000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
-				1A0000000000000000000070 /* Project.xcconfig */,
+				1A0000000000000000000070 /* BuildConfig/Project.xcconfig */,
 				1A0000000000000000000003 /* Luma */,
 				1A0000000000000000000063 /* Shared */,
 				1A0000000000000000000061 /* LumaBroadcastExtension */,
@@ -169,29 +169,6 @@
 			productReference = 1A0000000000000000000005 /* Luma.app */;
 			productType = "com.apple.product-type.application";
 		};
-		1A0000000000000000000012 /* LumaBroadcastExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 1A0000000000000000000069 /* Build configuration list for PBXNativeTarget "LumaBroadcastExtension" */;
-			buildPhases = (
-				1A0000000000000000000064 /* Sources */,
-				1A0000000000000000000065 /* Frameworks */,
-				1A0000000000000000000066 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				1A0000000000000000000061 /* LumaBroadcastExtension */,
-				1A0000000000000000000063 /* Shared */,
-			);
-			name = LumaBroadcastExtension;
-			packageProductDependencies = (
-			);
-			productName = LumaBroadcastExtension;
-			productReference = 1A0000000000000000000060 /* LumaBroadcastExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		1A0000000000000000000011 /* LumaTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1A0000000000000000000052 /* Build configuration list for PBXNativeTarget "LumaTests" */;
@@ -214,6 +191,29 @@
 			productName = LumaTests;
 			productReference = 1A0000000000000000000006 /* LumaTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		1A0000000000000000000012 /* LumaBroadcastExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A0000000000000000000069 /* Build configuration list for PBXNativeTarget "LumaBroadcastExtension" */;
+			buildPhases = (
+				1A0000000000000000000064 /* Sources */,
+				1A0000000000000000000065 /* Frameworks */,
+				1A0000000000000000000066 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				1A0000000000000000000061 /* LumaBroadcastExtension */,
+				1A0000000000000000000063 /* Shared */,
+			);
+			name = LumaBroadcastExtension;
+			packageProductDependencies = (
+			);
+			productName = LumaBroadcastExtension;
+			productReference = 1A0000000000000000000060 /* LumaBroadcastExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -318,7 +318,7 @@
 /* Begin XCBuildConfiguration section */
 		1A0000000000000000000040 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1A0000000000000000000070 /* Project.xcconfig */;
+			baseConfigurationReference = 1A0000000000000000000070 /* BuildConfig/Project.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -388,7 +388,7 @@
 		};
 		1A0000000000000000000041 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1A0000000000000000000070 /* Project.xcconfig */;
+			baseConfigurationReference = 1A0000000000000000000070 /* BuildConfig/Project.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -459,6 +459,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -490,6 +491,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;

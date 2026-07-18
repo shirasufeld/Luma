@@ -20,6 +20,10 @@ nonisolated final class CapabilityService: CapabilityChecking {
         await AVCaptureDevice.requestAccess(for: .audio) ? .granted : .denied
     }
 
+    func systemAudioCaptureStatus() -> SystemAudioCaptureStatus {
+        SystemAudioCaptureStatusRecorder.status()
+    }
+
     func transcriptionAvailability(for locale: Locale) async -> TranscriptionAvailability {
         guard SpeechTranscriber.isAvailable else {
             return .unavailableOnDevice

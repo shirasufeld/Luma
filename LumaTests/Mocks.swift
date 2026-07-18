@@ -8,9 +8,11 @@ nonisolated struct MockCapabilities: CapabilityChecking {
     var microphone: PermissionState = .granted
     var transcription: TranscriptionAvailability = .installed(Locale(identifier: "en-US"))
     var translation: TranslationAvailability = .installed
+    var systemAudioCapture: SystemAudioCaptureStatus = .notAttempted
 
     func microphonePermission() -> PermissionState { microphone }
     func requestMicrophonePermission() async -> PermissionState { microphone }
+    func systemAudioCaptureStatus() -> SystemAudioCaptureStatus { systemAudioCapture }
     func transcriptionAvailability(for locale: Locale) async -> TranscriptionAvailability {
         transcription
     }
