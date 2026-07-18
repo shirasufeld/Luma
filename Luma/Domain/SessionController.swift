@@ -102,7 +102,7 @@ actor SessionController {
             let provider = audioProviderFactory(inputKind)
             audioProvider = provider
             let audioStream = try await provider.start()
-            let events = try await transcription.start(consuming: audioStream)
+            let events = try await transcription.start(consuming: metered(audioStream))
 
             wallClockStart = Date()
             pausedAccumulated = 0
@@ -184,6 +184,30 @@ actor SessionController {
 
     func clearTranscript() async {
         await store.clearTranscript()
+    }
+
+    /// Forwards the provider's chunks unchanged while publishing a throttled
+    /// input-level reading — the user-visible proof that audio is arriving,
+    /// independent of whether transcription produces anything.
+    private func metered(_ upstream: AsyncStream<AudioChunk>) -> AsyncStream<AudioChunk> {
+        let store = self.store
+        let (stream, continuation) = AsyncStream.makeStream(
+            of: AudioChunk.self, bufferingPolicy: .unbounded)
+        Task {
+            var lastPush: ContinuousClock.Instant? = nil
+            for await chunk in upstream {
+                if let level = AudioLevel.normalizedLevel(of: chunk.buffer),
+                    lastPush.map({ ContinuousClock.now - $0 >= .milliseconds(100) }) ?? true
+                {
+                    lastPush = .now
+                    await store.audioLevelChanged(level)
+                }
+                continuation.yield(chunk)
+            }
+            continuation.finish()
+            await store.audioLevelChanged(nil)
+        }
+        return stream
     }
 
     // MARK: - Event loop

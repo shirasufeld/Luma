@@ -25,6 +25,9 @@ final class SessionStore {
     private(set) var translationAvailability: TranslationAvailability?
     /// Live translation of the volatile hypothesis (fast mode only).
     private(set) var volatileTranslation: String?
+    /// Normalized input level (0…1) of the captured audio; nil when nothing
+    /// is being captured. The visible proof that audio is arriving at all.
+    private(set) var audioLevel: Float?
 
     // User configuration.
     var languagePair: LanguagePair = .default
@@ -50,6 +53,7 @@ final class SessionStore {
         case .idle, .stopping:
             audioInput = .idle
             latency = nil
+            audioLevel = nil
         case .running:
             audioInput = .capturing(inputKind)
             errorMessage = nil
@@ -70,6 +74,10 @@ final class SessionStore {
 
     func translationAvailabilityChanged(_ availability: TranslationAvailability) {
         translationAvailability = availability
+    }
+
+    func audioLevelChanged(_ level: Float?) {
+        audioLevel = level
     }
 
     func applyVolatile(text: AttributedString, range: CMTimeRange, latency: TimeInterval?) {

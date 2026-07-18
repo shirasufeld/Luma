@@ -342,6 +342,9 @@ struct TranscriptSessionView: View {
     private var statusBar: some View {
         HStack(spacing: 16) {
             Label(sessionLabel, systemImage: sessionSymbol)
+            if store.sessionState == .running || store.sessionState == .paused {
+                AudioLevelMeter(level: store.audioLevel)
+            }
             Label(modelLabel, systemImage: modelSymbol)
             if let latency = store.latency,
                 store.sessionState == .running || store.sessionState == .paused

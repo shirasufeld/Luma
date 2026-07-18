@@ -1164,6 +1164,17 @@
           }
         }
       }
+    },
+    "Audio level" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音频电平"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
