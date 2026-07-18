@@ -3,6 +3,9 @@ import Foundation
 import Observation
 
 private nonisolated let translationModeDefaultsKey = "translation.mode"
+private nonisolated let inputKindDefaultsKey = "audio.inputKind"
+private nonisolated let transcriptionLocaleDefaultsKey = "language.transcriptionLocale"
+private nonisolated let translationTargetDefaultsKey = "language.translationTarget"
 
 /// Single source of truth for everything the UI shows. Mutated only on the
 /// main actor; the session controller hops here to publish updates.
@@ -29,16 +32,47 @@ final class SessionStore {
     /// is being captured. The visible proof that audio is arriving at all.
     private(set) var audioLevel: Float?
 
-    // User configuration.
-    var languagePair: LanguagePair = .default
-    var inputKind: AudioInputKind = .microphone
-    var translationMode: TranslationMode =
-        UserDefaults.standard.string(forKey: translationModeDefaultsKey)
-        .flatMap(TranslationMode.init(rawValue:)) ?? .balanced
-    {
+    // User configuration — persisted so the app relaunches the way it was
+    // last used (these are now primary main-screen controls).
+    var languagePair: LanguagePair = .default {
         didSet {
-            UserDefaults.standard.set(
-                translationMode.rawValue, forKey: translationModeDefaultsKey)
+            defaults.set(
+                languagePair.transcriptionLocale.identifier,
+                forKey: transcriptionLocaleDefaultsKey)
+            defaults.set(
+                languagePair.translationTarget.maximalIdentifier,
+                forKey: translationTargetDefaultsKey)
+        }
+    }
+    var inputKind: AudioInputKind = .microphone {
+        didSet { defaults.set(inputKind.rawValue, forKey: inputKindDefaultsKey) }
+    }
+    var translationMode: TranslationMode = .balanced {
+        didSet { defaults.set(translationMode.rawValue, forKey: translationModeDefaultsKey) }
+    }
+
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        // Property observers do not fire during init, so restoration does not
+        // echo the values straight back into the defaults.
+        if let kind = defaults.string(forKey: inputKindDefaultsKey)
+            .flatMap(AudioInputKind.init(rawValue:))
+        {
+            inputKind = kind
+        }
+        if let mode = defaults.string(forKey: translationModeDefaultsKey)
+            .flatMap(TranslationMode.init(rawValue:))
+        {
+            translationMode = mode
+        }
+        if let locale = defaults.string(forKey: transcriptionLocaleDefaultsKey),
+            let target = defaults.string(forKey: translationTargetDefaultsKey)
+        {
+            languagePair = LanguagePair(
+                transcriptionLocale: Locale(identifier: locale),
+                translationTarget: Locale.Language(identifier: target))
         }
     }
 

@@ -1274,6 +1274,17 @@
           }
         }
       }
+    },
+    "Translation Mode" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻译模式"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

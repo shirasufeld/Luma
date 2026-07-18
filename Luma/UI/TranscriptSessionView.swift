@@ -8,6 +8,8 @@ struct TranscriptSessionView: View {
     let session: SessionController
     var overlay: SubtitleOverlayController?
     var exporter: (any TranscriptExporting)?
+    /// Enables the main-screen language-pair/mode menu when provided.
+    var capabilities: (any CapabilityChecking)?
     #if os(iOS)
     var broadcastMonitor: BroadcastStateMonitor?
     #endif
@@ -33,6 +35,9 @@ struct TranscriptSessionView: View {
         #if os(macOS)
         .toolbar {
             ToolbarItemGroup {
+                if let capabilities {
+                    LanguagePairMenu(store: store, capabilities: capabilities)
+                }
                 inputPicker
                 controlButtons
                 overlayToggle
@@ -77,6 +82,12 @@ struct TranscriptSessionView: View {
     /// and export actions.
     private var iosControlBar: some View {
         VStack(spacing: 10) {
+            if let capabilities {
+                HStack {
+                    LanguagePairMenu(store: store, capabilities: capabilities)
+                    Spacer()
+                }
+            }
             iosInputRow
             HStack(spacing: 16) {
                 controlButtons
@@ -407,10 +418,14 @@ struct TranscriptSessionView: View {
                     .truncationMode(.middle)
                     .help(message)
             }
-            Text(
-                "\(store.languagePair.transcriptionLocale.identifier) → \(store.languagePair.translationTarget.minimalIdentifier)"
-            )
-            .foregroundStyle(.secondary)
+            // The language pair moved into the interactive main-screen menu;
+            // keep the readout only when that menu is unavailable.
+            if capabilities == nil {
+                Text(
+                    "\(store.languagePair.transcriptionLocale.identifier) → \(store.languagePair.translationTarget.minimalIdentifier)"
+                )
+                .foregroundStyle(.secondary)
+            }
         }
         .font(.callout)
         .padding(.horizontal, 12)

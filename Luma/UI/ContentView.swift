@@ -14,7 +14,7 @@ struct ContentView: View {
 
     var body: some View {
         let base =
-            tabs
+            sessionTab
             .tint(Color(hexString: accentHex) ?? .accentColor)
             .appLanguage(appLanguageRaw)
         #if os(macOS)
@@ -26,7 +26,9 @@ struct ContentView: View {
             .sheet(isPresented: $showingSettings) {
                 NavigationStack {
                     SettingsView(
-                        store: dependencies.store, capabilities: dependencies.capabilities
+                        store: dependencies.store,
+                        capabilities: dependencies.capabilities,
+                        broadcastMonitor: dependencies.broadcastMonitor
                     )
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
@@ -44,26 +46,6 @@ struct ContentView: View {
                     .allowsHitTesting(false)
             }
         #endif
-    }
-
-    private var tabs: some View {
-        TabView {
-            Tab("Session", systemImage: "captions.bubble") {
-                sessionTab
-            }
-            Tab("Diagnostics", systemImage: "checklist") {
-                #if os(iOS)
-                CapabilityPanel(
-                    capabilities: dependencies.capabilities,
-                    languagePair: dependencies.store.languagePair,
-                    broadcastMonitor: dependencies.broadcastMonitor)
-                #else
-                CapabilityPanel(
-                    capabilities: dependencies.capabilities,
-                    languagePair: dependencies.store.languagePair)
-                #endif
-            }
-        }
     }
 
     @ViewBuilder
@@ -93,13 +75,15 @@ struct ContentView: View {
             session: dependencies.session,
             overlay: dependencies.overlay,
             exporter: dependencies.exporter,
+            capabilities: dependencies.capabilities,
             broadcastMonitor: dependencies.broadcastMonitor)
         #else
         TranscriptSessionView(
             store: dependencies.store,
             session: dependencies.session,
             overlay: dependencies.overlay,
-            exporter: dependencies.exporter)
+            exporter: dependencies.exporter,
+            capabilities: dependencies.capabilities)
         #endif
     }
 }

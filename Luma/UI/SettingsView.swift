@@ -1,10 +1,14 @@
 import SwiftUI
 
-/// App settings: language pair and input source (General) and caption
-/// surface appearance (Overlay).
+/// App settings: language pair and input source (General), caption surface
+/// appearance (Overlay), and the read-only Diagnostics panel.
 struct SettingsView: View {
     @Bindable var store: SessionStore
     let capabilities: any CapabilityChecking
+    #if os(iOS)
+    /// Live broadcast state for the Diagnostics system-audio row.
+    var broadcastMonitor: BroadcastStateMonitor? = nil
+    #endif
 
     @AppStorage(AppLanguage.defaultsKey)
     private var appLanguageRaw = AppLanguage.system.rawValue
@@ -20,9 +24,22 @@ struct SettingsView: View {
             Tab("Overlay", systemImage: "captions.bubble") {
                 OverlaySettingsView()
             }
+            Tab("Diagnostics", systemImage: "checklist") {
+                #if os(iOS)
+                CapabilityPanel(
+                    capabilities: capabilities,
+                    languagePair: store.languagePair,
+                    broadcastMonitor: broadcastMonitor)
+                #else
+                CapabilityPanel(
+                    capabilities: capabilities,
+                    languagePair: store.languagePair)
+                #endif
+            }
         }
         #if os(macOS)
-        .frame(width: 460, height: 400)
+        // Sized for the widest tab (Diagnostics' outcome rows).
+        .frame(width: 500, height: 480)
         #endif
         .navigationTitle("Settings")
         .appLanguage(appLanguageRaw)
