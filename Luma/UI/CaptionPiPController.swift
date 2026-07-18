@@ -151,7 +151,8 @@ final class CaptionPiPController: NSObject {
             let textWidth = inset.width - 28
 
             let placeholder = original.isEmpty && translation.isEmpty
-            let originalText = placeholder ? String(localized: "Listening…") : original
+            let originalText =
+                placeholder ? String(localized: "Listening…", locale: AppLanguage.currentLocale()) : original
 
             var blocks: [(text: NSAttributedString, height: CGFloat)] = []
             func addBlock(_ string: String, font: UIFont, color: UIColor) {

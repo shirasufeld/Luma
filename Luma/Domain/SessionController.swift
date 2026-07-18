@@ -349,13 +349,17 @@ actor SessionController {
                     "Microphone access is denied. Enable it in System Settings > Privacy & Security."
             )
         case TranscriptionError.unavailableOnDevice:
-            return String(localized: "Speech-to-text is not available on this device.")
+            return String(
+                localized: "Speech-to-text is not available on this device.", locale: AppLanguage.currentLocale())
         case TranscriptionError.unsupportedLocale(let locale):
-            return String(localized: "Transcription does not support \(locale.identifier).")
+            return String(
+                localized: "Transcription does not support \(locale.identifier).", locale: AppLanguage.currentLocale())
         case TranscriptionError.modelAssetsUnavailable:
-            return String(localized: "Transcription model assets could not be installed.")
+            return String(
+                localized: "Transcription model assets could not be installed.", locale: AppLanguage.currentLocale())
         case TranscriptionError.noCompatibleAudioFormat:
-            return String(localized: "No compatible audio format for the transcriber.")
+            return String(
+                localized: "No compatible audio format for the transcriber.", locale: AppLanguage.currentLocale())
         default:
             #if os(iOS)
             if case BroadcastAudioError.appGroupUnavailable = error {

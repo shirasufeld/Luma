@@ -11,7 +11,7 @@ struct SettingsView: View {
     #endif
 
     @AppStorage(AppLanguage.defaultsKey)
-    private var appLanguageRaw = AppLanguage.system.rawValue
+    private var appLanguageRaw = AppLanguage.systemValue
 
     var body: some View {
         TabView {
@@ -51,7 +51,7 @@ private struct GeneralSettingsView: View {
     let capabilities: any CapabilityChecking
 
     @AppStorage(AppLanguage.defaultsKey)
-    private var appLanguageRaw = AppLanguage.system.rawValue
+    private var appLanguageRaw = AppLanguage.systemValue
 
     @Environment(\.locale)
     private var displayLocale
@@ -64,13 +64,20 @@ private struct GeneralSettingsView: View {
     var body: some View {
         Form {
             Section("App Language") {
-                Picker("App Language", selection: $appLanguageRaw) {
-                    Text("System").tag(AppLanguage.system.rawValue)
-                    Text(verbatim: "English").tag(AppLanguage.english.rawValue)
-                    Text(verbatim: "简体中文").tag(AppLanguage.simplifiedChinese.rawValue)
+                Picker("App Language", selection: languageModeSelection) {
+                    Text("System").tag(AppLanguage.systemValue)
+                    Text("Custom").tag(customModeTag)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                if appLanguageRaw != AppLanguage.systemValue {
+                    Picker("Language", selection: $appLanguageRaw) {
+                        ForEach(AppLanguage.available, id: \.id) { entry in
+                            // Endonyms stay in their own script, never localized.
+                            Text(verbatim: entry.endonym).tag(entry.id)
+                        }
+                    }
+                }
             }
             Section("Languages") {
                 Picker("Transcribe", selection: transcriptionSelection) {
@@ -123,6 +130,22 @@ private struct GeneralSettingsView: View {
                 .sorted { $0.identifier < $1.identifier }
             translationLanguages = await capabilities.supportedTranslationLanguages()
                 .sorted { $0.maximalIdentifier < $1.maximalIdentifier }
+        }
+    }
+
+    private let customModeTag = "custom"
+
+    /// System vs Custom. Switching to Custom starts from the system language
+    /// when the app ships it; the dropdown then picks the concrete language.
+    private var languageModeSelection: Binding<String> {
+        Binding {
+            appLanguageRaw == AppLanguage.systemValue ? AppLanguage.systemValue : customModeTag
+        } set: { mode in
+            if mode == AppLanguage.systemValue {
+                appLanguageRaw = AppLanguage.systemValue
+            } else if appLanguageRaw == AppLanguage.systemValue {
+                appLanguageRaw = AppLanguage.defaultCustomID()
+            }
         }
     }
 

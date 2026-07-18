@@ -21,8 +21,8 @@ struct BroadcastPickerButton: UIViewRepresentable {
         picker.showsMicrophoneButton = false
         // The system control ships without a meaningful VoiceOver label, and
         // this is the single tap that starts system-audio capture.
-        let label = String(localized: "Start Screen Broadcast (audio only)")
-        let hint = String(localized: "Opens the system screen-recording picker.")
+        let label = String(localized: "Start Screen Broadcast (audio only)", locale: AppLanguage.currentLocale())
+        let hint = String(localized: "Opens the system screen-recording picker.", locale: AppLanguage.currentLocale())
         picker.accessibilityLabel = label
         picker.accessibilityHint = hint
         for case let button as UIButton in picker.subviews {

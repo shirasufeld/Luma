@@ -32,11 +32,18 @@ actor SpeechAnalyzerTranscriber: TranscriptionProviding {
         onModelState(.checking)
         guard SpeechTranscriber.isAvailable else {
             onModelState(
-                .failed(String(localized: "Speech-to-text is not available on this device.")))
+                .failed(
+                    String(
+                        localized: "Speech-to-text is not available on this device.",
+                        locale: AppLanguage.currentLocale())))
             throw TranscriptionError.unavailableOnDevice
         }
         guard let supported = await SpeechTranscriber.supportedLocale(equivalentTo: locale) else {
-            onModelState(.failed(String(localized: "Locale \(locale.identifier) is not supported.")))
+            onModelState(
+                .failed(
+                    String(
+                        localized: "Locale \(locale.identifier) is not supported.", locale: AppLanguage.currentLocale())
+                ))
             throw TranscriptionError.unsupportedLocale(locale)
         }
 
@@ -64,10 +71,13 @@ actor SpeechAnalyzerTranscriber: TranscriptionProviding {
             }
         case .unsupported:
             onModelState(
-                .failed(String(localized: "No transcription model for \(supported.identifier).")))
+                .failed(
+                    String(
+                        localized: "No transcription model for \(supported.identifier).",
+                        locale: AppLanguage.currentLocale())))
             throw TranscriptionError.modelAssetsUnavailable
         @unknown default:
-            onModelState(.failed(String(localized: "Unknown model asset state.")))
+            onModelState(.failed(String(localized: "Unknown model asset state.", locale: AppLanguage.currentLocale())))
             throw TranscriptionError.modelAssetsUnavailable
         }
 

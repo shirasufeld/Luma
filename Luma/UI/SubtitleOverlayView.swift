@@ -22,7 +22,7 @@ struct SubtitleOverlayView: View {
     private var showTranslation = true
 
     @AppStorage(AppLanguage.defaultsKey)
-    private var appLanguageRaw = AppLanguage.system.rawValue
+    private var appLanguageRaw = AppLanguage.systemValue
 
     @Environment(\.accessibilityReduceTransparency)
     private var reduceTransparency

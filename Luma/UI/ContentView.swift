@@ -6,7 +6,7 @@ struct ContentView: View {
     @AppStorage(AppearanceSettingsKey.accentHex)
     private var accentHex = ""
     @AppStorage(AppLanguage.defaultsKey)
-    private var appLanguageRaw = AppLanguage.system.rawValue
+    private var appLanguageRaw = AppLanguage.systemValue
 
     #if os(iOS)
     @State private var showingSettings = false
