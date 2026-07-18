@@ -1,6 +1,7 @@
 import AVFAudio
 import CoreMedia
 import ReplayKit
+import os
 
 /// ReplayKit broadcast-upload extension entry point.
 ///
@@ -15,10 +16,31 @@ import ReplayKit
 final class SampleHandler: RPBroadcastSampleHandler {
     private let lock = NSLock()
     private var ring: SharedAudioRing?
-    private var converter: AVAudioConverter?
-    private var sourceFormat: AVAudioFormat?
     private var heartbeat: DispatchSourceTimer?
-    private let canonicalFormat = BroadcastAudio.makeCanonicalFormat()
+    private let converter = CanonicalPCMConverter(
+        canonicalFormat: BroadcastAudio.makeCanonicalFormat())
+    private let logger = BroadcastAudio.makeLogger(category: "BroadcastExtension")
+
+    // Counters (under `lock`) reported on the heartbeat cadence — the primary
+    // field diagnostic for "broadcast alive but no captions".
+    private var received = 0
+    private var forwarded = 0
+    private var dropped = 0
+    private var dropCounts: [String: Int] = [:]
+
+    override init() {
+        super.init()
+        converter.onSourceFormatChange = { [logger] asbd in
+            logger.info(
+                """
+                source format: rate=\(asbd.mSampleRate, privacy: .public) \
+                ch=\(asbd.mChannelsPerFrame, privacy: .public) \
+                bits=\(asbd.mBitsPerChannel, privacy: .public) \
+                flags=\(asbd.mFormatFlags, privacy: .public) \
+                id=\(asbd.mFormatID, privacy: .public)
+                """)
+        }
+    }
 
     override func broadcastStarted(withSetupInfo setupInfo: [String: NSObject]?) {
         if let url = BroadcastAudio.ringURL() {
@@ -32,6 +54,13 @@ final class SampleHandler: RPBroadcastSampleHandler {
             lock.lock()
             ring = opened
             lock.unlock()
+            if opened == nil {
+                logger.error("broadcast started but the ring could not be opened")
+            } else {
+                logger.info("broadcast started, ring open")
+            }
+        } else {
+            logger.error("broadcast started but the App Group container is unavailable")
         }
         // Liveness heartbeat: `.finished` never fires if this process dies
         // uncleanly, so the app-side observers watch for this going quiet.
@@ -39,8 +68,15 @@ final class SampleHandler: RPBroadcastSampleHandler {
         timer.schedule(
             deadline: .now(), repeating: BroadcastAudio.heartbeatInterval, leeway: .milliseconds(500)
         )
-        timer.setEventHandler {
+        timer.setEventHandler { [weak self] in
             DarwinNotificationCenter.shared.post(BroadcastAudio.Notification.heartbeat)
+            guard let self else { return }
+            self.lock.lock()
+            let line =
+                "heartbeat received=\(self.received) forwarded=\(self.forwarded)"
+                + " dropped=\(self.dropped)"
+            self.lock.unlock()
+            self.logger.info("\(line, privacy: .public)")
         }
         timer.resume()
         lock.lock()
@@ -54,16 +90,31 @@ final class SampleHandler: RPBroadcastSampleHandler {
     ) {
         // Other apps' audio only; the screen frames and mic are not our concern.
         guard sampleBufferType == .audioApp else { return }
-        guard let mono = makeCanonicalBuffer(from: sampleBuffer),
-            let channel = mono.floatChannelData?[0]
-        else { return }
-        let byteCount = Int(mono.frameLength) * MemoryLayout<Float>.size
-        guard byteCount > 0 else { return }
-
         lock.lock()
-        ring?.write(UnsafeRawBufferPointer(start: channel, count: byteCount))
+        received += 1
+        var postAudio = false
+        var dropLine: String?
+        switch converter.convert(sampleBuffer) {
+        case .success(let mono):
+            // Zero frames is not a drop: the converter buffered this input
+            // and will emit it with a later call.
+            let byteCount = Int(mono.frameLength) * MemoryLayout<Float>.size
+            if byteCount > 0, let channel = mono.floatChannelData?[0] {
+                ring?.write(UnsafeRawBufferPointer(start: channel, count: byteCount))
+                forwarded += 1
+                postAudio = true
+            }
+        case .failure(let reason):
+            dropped += 1
+            dropLine = throttledDropLine(reason.description)
+        }
         lock.unlock()
-        DarwinNotificationCenter.shared.post(BroadcastAudio.Notification.audio)
+        if let dropLine {
+            logger.error("\(dropLine, privacy: .public)")
+        }
+        if postAudio {
+            DarwinNotificationCenter.shared.post(BroadcastAudio.Notification.audio)
+        }
     }
 
     override func broadcastFinished() {
@@ -73,50 +124,20 @@ final class SampleHandler: RPBroadcastSampleHandler {
         heartbeat = nil
         ring?.close()
         ring = nil
+        let line =
+            "broadcast finished received=\(received) forwarded=\(forwarded)"
+            + " dropped=\(dropped)"
         lock.unlock()
+        logger.info("\(line, privacy: .public)")
     }
 
-    /// Converts a ReplayKit app-audio sample buffer to canonical mono Float32.
-    private func makeCanonicalBuffer(from sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
-        guard let formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer),
-            let asbdPointer = CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription)
-        else { return nil }
-        var asbd = asbdPointer.pointee
-        let frameCount = CMSampleBufferGetNumSamples(sampleBuffer)
-        guard frameCount > 0, let source = AVAudioFormat(streamDescription: &asbd) else { return nil }
-
-        if converter == nil || !(sourceFormat?.isEqual(source) ?? false) {
-            converter = AVAudioConverter(from: source, to: canonicalFormat)
-            sourceFormat = source
-        }
-        guard let converter,
-            let sourceBuffer = AVAudioPCMBuffer(
-                pcmFormat: source, frameCapacity: AVAudioFrameCount(frameCount))
-        else { return nil }
-        sourceBuffer.frameLength = AVAudioFrameCount(frameCount)
-        guard
-            CMSampleBufferCopyPCMDataIntoAudioBufferList(
-                sampleBuffer, at: 0, frameCount: Int32(frameCount),
-                into: sourceBuffer.mutableAudioBufferList) == noErr
-        else { return nil }
-
-        let ratio = canonicalFormat.sampleRate / source.sampleRate
-        let capacity = AVAudioFrameCount(Double(frameCount) * ratio) + 1024
-        guard let output = AVAudioPCMBuffer(pcmFormat: canonicalFormat, frameCapacity: capacity)
-        else { return nil }
-
-        var provided = false
-        var conversionError: NSError?
-        let status = converter.convert(to: output, error: &conversionError) { _, inputStatus in
-            if provided {
-                inputStatus.pointee = .noDataNow
-                return nil
-            }
-            provided = true
-            inputStatus.pointee = .haveData
-            return sourceBuffer
-        }
-        guard status != .error, output.frameLength > 0 else { return nil }
-        return output
+    /// Caller must hold `lock`. Returns a log line for the first occurrence of
+    /// each drop reason and every 100th after that, keeping the log quiet while
+    /// a persistent failure stays visible.
+    private func throttledDropLine(_ reason: String) -> String? {
+        let count = (dropCounts[reason] ?? 0) + 1
+        dropCounts[reason] = count
+        guard count == 1 || count.isMultiple(of: 100) else { return nil }
+        return "dropped sample (\(reason)) count=\(count)"
     }
 }

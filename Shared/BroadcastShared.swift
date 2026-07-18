@@ -1,5 +1,6 @@
 import AVFAudio
 import Foundation
+import os
 
 /// Constants shared by the main app (consumer) and the broadcast-upload
 /// extension (producer) for the iOS system-audio captioning path.
@@ -56,6 +57,12 @@ nonisolated enum BroadcastAudio {
         AVAudioFormat(
             commonFormat: .pcmFormatFloat32, sampleRate: sampleRate,
             channels: channelCount, interleaved: true)!
+    }
+
+    /// Logger namespaced under the host app id so one Console filter
+    /// (`subsystem:<app id>`) captures both processes of the broadcast path.
+    static func makeLogger(category: String) -> Logger {
+        Logger(subsystem: hostAppBundleID, category: category)
     }
 
     /// Ring buffer URL in the shared container, or `nil` when the App Group is
