@@ -49,15 +49,19 @@ struct CapabilityPanel: View {
                     "Transcription (\(languagePair.transcriptionLocale.identifier))",
                     status: transcriptionLabel(snapshot.transcription)
                 )
-                row(
-                    "Translation (\(languagePair.translationSource.minimalIdentifier) → \(languagePair.translationTarget.minimalIdentifier))",
-                    status: translationLabel(snapshot.translation)
-                )
-                if snapshot.translation == .supported {
-                    Button("Download Translation Models…") {
-                        isDownloadingTranslation = true
+                if let target = languagePair.translationTarget {
+                    row(
+                        "Translation (\(languagePair.translationSource.minimalIdentifier) → \(target.minimalIdentifier))",
+                        status: translationLabel(snapshot.translation)
+                    )
+                    if snapshot.translation == .supported {
+                        Button("Download Translation Models…") {
+                            isDownloadingTranslation = true
+                        }
+                        .disabled(isDownloadingTranslation)
                     }
-                    .disabled(isDownloadingTranslation)
+                } else {
+                    row("Translation", status: ("Off", .secondary))
                 }
             }
             Section {
@@ -75,10 +79,10 @@ struct CapabilityPanel: View {
             }
         }
         .background {
-            if isDownloadingTranslation {
+            if isDownloadingTranslation, let target = languagePair.translationTarget {
                 TranslationDownloadBridge(
                     source: languagePair.translationSource,
-                    target: languagePair.translationTarget
+                    target: target
                 ) { _ in
                     isDownloadingTranslation = false
                     Task { await refresh() }
@@ -116,8 +120,10 @@ struct CapabilityPanel: View {
         next.systemAudioCapture = capabilities.systemAudioCaptureStatus()
         next.transcription = await capabilities.transcriptionAvailability(
             for: languagePair.transcriptionLocale)
-        next.translation = await capabilities.translationAvailability(
-            from: languagePair.translationSource, to: languagePair.translationTarget)
+        if let target = languagePair.translationTarget {
+            next.translation = await capabilities.translationAvailability(
+                from: languagePair.translationSource, to: target)
+        }
         snapshot = next
     }
 

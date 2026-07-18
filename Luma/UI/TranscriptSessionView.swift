@@ -421,10 +421,15 @@ struct TranscriptSessionView: View {
             // The language pair moved into the interactive main-screen menu;
             // keep the readout only when that menu is unavailable.
             if capabilities == nil {
-                Text(
-                    "\(store.languagePair.transcriptionLocale.identifier) → \(store.languagePair.translationTarget.minimalIdentifier)"
-                )
-                .foregroundStyle(.secondary)
+                if let target = store.languagePair.translationTarget {
+                    Text(
+                        "\(store.languagePair.transcriptionLocale.identifier) → \(target.minimalIdentifier)"
+                    )
+                    .foregroundStyle(.secondary)
+                } else {
+                    Text("\(store.languagePair.transcriptionLocale.identifier) (transcribe only)")
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .font(.callout)

@@ -79,6 +79,7 @@ private struct GeneralSettingsView: View {
                     }
                 }
                 Picker("Translate to", selection: translationSelection) {
+                    Text("None (transcription only)").tag(LanguagePair.noneTargetValue)
                     ForEach(displayedTranslationLanguages, id: \.maximalIdentifier) { language in
                         Text(displayName(forLanguage: language)).tag(language.maximalIdentifier)
                     }
@@ -149,7 +150,9 @@ private struct GeneralSettingsView: View {
     }
 
     private var displayedTranslationLanguages: [Locale.Language] {
-        let current = store.languagePair.translationTarget
+        guard let current = store.languagePair.translationTarget else {
+            return translationLanguages
+        }
         if translationLanguages.contains(where: { $0.maximalIdentifier == current.maximalIdentifier }) {
             return translationLanguages
         }
@@ -166,9 +169,12 @@ private struct GeneralSettingsView: View {
 
     private var translationSelection: Binding<String> {
         Binding {
-            store.languagePair.translationTarget.maximalIdentifier
+            store.languagePair.translationTarget?.maximalIdentifier
+                ?? LanguagePair.noneTargetValue
         } set: { identifier in
-            store.languagePair.translationTarget = Locale.Language(identifier: identifier)
+            store.languagePair.translationTarget =
+                identifier == LanguagePair.noneTargetValue
+                ? nil : Locale.Language(identifier: identifier)
         }
     }
 

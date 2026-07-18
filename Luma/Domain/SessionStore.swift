@@ -36,27 +36,37 @@ final class SessionStore {
     // last used (these are now primary main-screen controls).
     var languagePair: LanguagePair = .default {
         didSet {
+            guard didRestore else { return }
             defaults.set(
                 languagePair.transcriptionLocale.identifier,
                 forKey: transcriptionLocaleDefaultsKey)
             defaults.set(
-                languagePair.translationTarget.maximalIdentifier,
+                languagePair.translationTarget?.maximalIdentifier
+                    ?? LanguagePair.noneTargetValue,
                 forKey: translationTargetDefaultsKey)
         }
     }
     var inputKind: AudioInputKind = .microphone {
-        didSet { defaults.set(inputKind.rawValue, forKey: inputKindDefaultsKey) }
+        didSet {
+            guard didRestore else { return }
+            defaults.set(inputKind.rawValue, forKey: inputKindDefaultsKey)
+        }
     }
     var translationMode: TranslationMode = .balanced {
-        didSet { defaults.set(translationMode.rawValue, forKey: translationModeDefaultsKey) }
+        didSet {
+            guard didRestore else { return }
+            defaults.set(translationMode.rawValue, forKey: translationModeDefaultsKey)
+        }
     }
 
     private let defaults: UserDefaults
+    /// Under `@Observable`, assignments in the init body DO run `didSet`
+    /// (they go through the macro-generated setter) — this flag keeps
+    /// restoration from writing anything back until it has finished.
+    private var didRestore = false
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        // Property observers do not fire during init, so restoration does not
-        // echo the values straight back into the defaults.
         if let kind = defaults.string(forKey: inputKindDefaultsKey)
             .flatMap(AudioInputKind.init(rawValue:))
         {
@@ -67,13 +77,17 @@ final class SessionStore {
         {
             translationMode = mode
         }
-        if let locale = defaults.string(forKey: transcriptionLocaleDefaultsKey),
-            let target = defaults.string(forKey: translationTargetDefaultsKey)
-        {
-            languagePair = LanguagePair(
-                transcriptionLocale: Locale(identifier: locale),
-                translationTarget: Locale.Language(identifier: target))
+        // The two language keys restore independently so one missing key
+        // never discards the other's persisted value.
+        if let locale = defaults.string(forKey: transcriptionLocaleDefaultsKey) {
+            languagePair.transcriptionLocale = Locale(identifier: locale)
         }
+        if let target = defaults.string(forKey: translationTargetDefaultsKey) {
+            languagePair.translationTarget =
+                target == LanguagePair.noneTargetValue
+                ? nil : Locale.Language(identifier: target)
+        }
+        didRestore = true
     }
 
     var entries: [SubtitleEntry] { buffer.entries }

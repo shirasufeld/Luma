@@ -23,6 +23,7 @@ struct LanguagePairMenu: View {
             .pickerStyle(.menu)
             .disabled(store.sessionState != .idle)
             Picker("Translate to", selection: translationSelection) {
+                Text("None (transcription only)").tag(LanguagePair.noneTargetValue)
                 ForEach(displayedTranslationLanguages, id: \.maximalIdentifier) { language in
                     Text(displayName(forLanguage: language)).tag(language.maximalIdentifier)
                 }
@@ -39,10 +40,8 @@ struct LanguagePairMenu: View {
         } label: {
             Label {
                 // Compact identifier form, mirroring the old status readout.
-                Text(
-                    "\(store.languagePair.transcriptionLocale.identifier) → \(store.languagePair.translationTarget.minimalIdentifier)"
-                )
-                .monospacedDigit()
+                pairLabel
+                    .monospacedDigit()
             } icon: {
                 Image(systemName: "globe")
             }
@@ -52,6 +51,17 @@ struct LanguagePairMenu: View {
                 .sorted { $0.identifier < $1.identifier }
             translationLanguages = await capabilities.supportedTranslationLanguages()
                 .sorted { $0.maximalIdentifier < $1.maximalIdentifier }
+        }
+    }
+
+    @ViewBuilder
+    private var pairLabel: some View {
+        if let target = store.languagePair.translationTarget {
+            Text(
+                "\(store.languagePair.transcriptionLocale.identifier) → \(target.minimalIdentifier)"
+            )
+        } else {
+            Text("\(store.languagePair.transcriptionLocale.identifier) (transcribe only)")
         }
     }
 
@@ -67,7 +77,9 @@ struct LanguagePairMenu: View {
     }
 
     private var displayedTranslationLanguages: [Locale.Language] {
-        let current = store.languagePair.translationTarget
+        guard let current = store.languagePair.translationTarget else {
+            return translationLanguages
+        }
         if translationLanguages.contains(where: { $0.maximalIdentifier == current.maximalIdentifier }
         ) {
             return translationLanguages
@@ -85,9 +97,12 @@ struct LanguagePairMenu: View {
 
     private var translationSelection: Binding<String> {
         Binding {
-            store.languagePair.translationTarget.maximalIdentifier
+            store.languagePair.translationTarget?.maximalIdentifier
+                ?? LanguagePair.noneTargetValue
         } set: { identifier in
-            store.languagePair.translationTarget = Locale.Language(identifier: identifier)
+            store.languagePair.translationTarget =
+                identifier == LanguagePair.noneTargetValue
+                ? nil : Locale.Language(identifier: identifier)
         }
     }
 

@@ -86,13 +86,19 @@ actor SessionController {
             }
             await store.transcriptionDidResolve(locale: resolved)
 
-            let availability = await translation.setLanguagePair(
-                source: languagePair.translationSource,
-                target: languagePair.translationTarget,
-                mode: translationMode)
-            translationReady = availability == .installed
+            if let target = languagePair.translationTarget {
+                let availability = await translation.setLanguagePair(
+                    source: languagePair.translationSource,
+                    target: target,
+                    mode: translationMode)
+                translationReady = availability == .installed
+                await store.translationAvailabilityChanged(availability)
+            } else {
+                // Transcription-only: no translation session, no workers;
+                // entries flow straight to `.unavailable` downstream.
+                translationReady = false
+            }
             self.translationMode = translationMode
-            await store.translationAvailabilityChanged(availability)
             if translationReady {
                 startTranslationWorker()
                 if translationMode.translatesVolatileText {

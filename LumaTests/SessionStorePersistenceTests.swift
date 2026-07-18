@@ -25,8 +25,27 @@ struct SessionStorePersistenceTests {
         let second = SessionStore(defaults: defaults)
         #expect(second.inputKind == .systemAudio)
         #expect(second.languagePair.transcriptionLocale.identifier == "ja-JP")
-        #expect(second.languagePair.translationTarget.minimalIdentifier == "en")
+        #expect(second.languagePair.translationTarget?.minimalIdentifier == "en")
         #expect(second.translationMode == .accurate)
+    }
+
+    @Test func noneTranslationTargetRoundTrips() {
+        let defaults = makeDefaults()
+        let first = SessionStore(defaults: defaults)
+        first.languagePair.translationTarget = nil
+
+        let second = SessionStore(defaults: defaults)
+        #expect(second.languagePair.translationTarget == nil)
+        #expect(!second.languagePair.isTranslationEnabled)
+    }
+
+    @Test func languageKeysRestoreIndependently() {
+        // One missing key must never discard the other's persisted value.
+        let defaults = makeDefaults()
+        defaults.set("ko-KR", forKey: "language.transcriptionLocale")
+        let store = SessionStore(defaults: defaults)
+        #expect(store.languagePair.transcriptionLocale.identifier == "ko-KR")
+        #expect(store.languagePair.translationTarget == LanguagePair.default.translationTarget)
     }
 
     @Test func freshDefaultsFallBackToDefaults() {

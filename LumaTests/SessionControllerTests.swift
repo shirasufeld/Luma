@@ -84,6 +84,26 @@ struct SessionControllerTests {
         await controller.stop()
     }
 
+    @Test func noneTargetSkipsTranslation() async {
+        // Transcription-only mode: no translation session, entries are marked
+        // unavailable and the volatile line never gets a live translation.
+        let segment = makeSegment("plain", start: 0, end: 1)
+        let (store, controller) = makeController(events: [
+            .volatile(text: AttributedString("pla"), range: segment.range),
+            .finalized(segment),
+        ])
+        var pair = LanguagePair.default
+        pair.translationTarget = nil
+
+        await controller.start(languagePair: pair, inputKind: .microphone, translationMode: .fast)
+        let delivered = await waitUntil {
+            store.entries.count == 1 && store.entries[0].translation == .unavailable
+        }
+        #expect(delivered, "entry should be unavailable in transcription-only mode")
+        #expect(store.volatileTranslation == nil)
+        await controller.stop()
+    }
+
     @Test func fastModeTranslatesVolatileText() async {
         let range = makeSegment("x", start: 0, end: 1).range
         let (store, controller) = makeController(events: [
