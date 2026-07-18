@@ -31,7 +31,7 @@ struct CapabilityPanel: View {
                 #else
                 if let broadcastMonitor {
                     row(
-                        "System Audio Broadcast",
+                        "Screen Broadcast",
                         status: broadcastMonitor.isBroadcastActive
                             ? ("Active", .green) : ("Not running", .secondary))
                 }

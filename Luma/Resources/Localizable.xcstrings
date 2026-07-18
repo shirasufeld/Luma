@@ -127,17 +127,6 @@
         }
       }
     },
-    "Broadcasting" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在广播"
-          }
-        }
-      }
-    },
     "Captions" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1099,17 +1088,6 @@
         }
       }
     },
-    "Waiting for broadcast — tap the broadcast button to start" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "等待广播——点击广播按钮开始"
-          }
-        }
-      }
-    },
     "Open Privacy Settings…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1139,28 +1117,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "按下「开始」即可开始实时字幕。"
-          }
-        }
-      }
-    },
-    "Start System Audio Broadcast" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "开始系统音频广播"
-          }
-        }
-      }
-    },
-    "Opens the system broadcast picker." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开系统广播选择器。"
           }
         }
       }
@@ -1209,17 +1165,6 @@
         }
       }
     },
-    "System Audio Broadcast" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "系统音频广播"
-          }
-        }
-      }
-    },
     "Active" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1249,28 +1194,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "刷新"
-          }
-        }
-      }
-    },
-    "To caption another app's audio:\n1. Press Start.\n2. Tap the broadcast button and start broadcasting with Luma.\n3. Switch to the app you want to caption." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "要为其他 App 的音频生成字幕：\n1. 按下「开始」。\n2. 点击广播按钮并用 Luma 开始广播。\n3. 切换到要生成字幕的 App。"
-          }
-        }
-      }
-    },
-    "The broadcast button starts system-audio capture" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "广播按钮用于开始系统音频采集"
           }
         }
       }
@@ -1315,6 +1238,83 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已关闭"
+          }
+        }
+      }
+    },
+    "Capturing system audio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在采集系统音频"
+          }
+        }
+      }
+    },
+    "Waiting for the screen broadcast — tap the record button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "等待屏幕录制开始——点按录制按钮"
+          }
+        }
+      }
+    },
+    "The record button starts a screen broadcast that captures audio only" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制按钮通过屏幕录制采集系统声音，不会录制画面"
+          }
+        }
+      }
+    },
+    "To caption another app's audio:\n1. Press Start.\n2. Tap the record button and start the screen broadcast with Luma Captions.\n3. Switch to the app you want to caption.\nOnly audio is captured — the screen is never recorded." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要为其他 App 的音频生成字幕：\n1. 按下「开始」。\n2. 点按录制按钮，选择 Luma Captions 并开始屏幕录制。\n3. 切换到要生成字幕的 App。\n仅采集声音，不会录制画面。"
+          }
+        }
+      }
+    },
+    "Start Screen Broadcast (audio only)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始屏幕录制（仅采集声音）"
+          }
+        }
+      }
+    },
+    "Opens the system screen-recording picker." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开系统屏幕录制选择器。"
+          }
+        }
+      }
+    },
+    "Screen Broadcast" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "屏幕录制"
           }
         }
       }

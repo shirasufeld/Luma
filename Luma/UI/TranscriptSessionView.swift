@@ -138,19 +138,19 @@ struct TranscriptSessionView: View {
     private var broadcastStatusBadge: some View {
         if let broadcastMonitor, store.inputKind == .systemAudio {
             if broadcastMonitor.isBroadcastActive {
-                Label("Broadcasting", systemImage: "dot.radiowaves.left.and.right")
+                Label("Capturing system audio", systemImage: "dot.radiowaves.left.and.right")
                     .font(.caption)
                     .foregroundStyle(.green)
             } else if store.sessionState == .running {
                 Label(
-                    "Waiting for broadcast — tap the broadcast button to start",
+                    "Waiting for the screen broadcast — tap the record button",
                     systemImage: "clock"
                 )
                 .font(.caption)
                 .foregroundStyle(.orange)
             } else if store.sessionState == .idle {
                 Label(
-                    "The broadcast button starts system-audio capture",
+                    "The record button starts a screen broadcast that captures audio only",
                     systemImage: "info.circle"
                 )
                 .font(.caption)
@@ -294,7 +294,7 @@ struct TranscriptSessionView: View {
                 Label("No Captions Yet", systemImage: "dot.radiowaves.left.and.right")
             } description: {
                 Text(
-                    "To caption another app's audio:\n1. Press Start.\n2. Tap the broadcast button and start broadcasting with Luma.\n3. Switch to the app you want to caption."
+                    "To caption another app's audio:\n1. Press Start.\n2. Tap the record button and start the screen broadcast with Luma Captions.\n3. Switch to the app you want to caption.\nOnly audio is captured — the screen is never recorded."
                 )
             } actions: {
                 BroadcastPickerButton(size: 52)
