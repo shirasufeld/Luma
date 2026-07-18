@@ -1252,6 +1252,28 @@
           }
         }
       }
+    },
+    "To caption another app's audio:\n1. Press Start.\n2. Tap the broadcast button and start broadcasting with Luma.\n3. Switch to the app you want to caption." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要为其他 App 的音频生成字幕：\n1. 按下「开始」。\n2. 点击广播按钮并用 Luma 开始广播。\n3. 切换到要生成字幕的 App。"
+          }
+        }
+      }
+    },
+    "The broadcast button starts system-audio capture" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "广播按钮用于开始系统音频采集"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

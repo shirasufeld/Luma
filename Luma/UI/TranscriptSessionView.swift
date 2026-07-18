@@ -111,8 +111,10 @@ struct TranscriptSessionView: View {
             .disabled(store.sessionState != .idle)
 
             if store.inputKind == .systemAudio {
+                // Backed so the system glyph reads as a tappable control.
                 BroadcastPickerButton()
                     .frame(width: 44, height: 44)
+                    .background(.quaternary, in: .circle)
             }
         }
         broadcastStatusBadge
@@ -135,6 +137,13 @@ struct TranscriptSessionView: View {
                 )
                 .font(.caption)
                 .foregroundStyle(.orange)
+            } else if store.sessionState == .idle {
+                Label(
+                    "The broadcast button starts system-audio capture",
+                    systemImage: "info.circle"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
     }
@@ -256,20 +265,50 @@ struct TranscriptSessionView: View {
     @ViewBuilder
     private var transcriptList: some View {
         if store.entries.isEmpty && store.volatileText == nil {
-            // A blank scroll view on first launch reads as broken; tell the
-            // user the app is ready (or already listening) instead.
-            ContentUnavailableView {
-                Label("No Captions Yet", systemImage: "captions.bubble")
-            } description: {
-                if store.sessionState == .idle {
-                    Text("Press Start to begin live captions.")
-                } else {
-                    Text("Listening…")
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            emptyState
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             transcriptScroll
+        }
+    }
+
+    @ViewBuilder
+    private var emptyState: some View {
+        #if os(iOS)
+        if store.inputKind == .systemAudio, store.sessionState == .idle {
+            // The broadcast flow is not discoverable on its own: nothing
+            // happens until the user starts a system broadcast with Luma,
+            // so the idle empty state doubles as the step-by-step guide.
+            ContentUnavailableView {
+                Label("No Captions Yet", systemImage: "dot.radiowaves.left.and.right")
+            } description: {
+                Text(
+                    "To caption another app's audio:\n1. Press Start.\n2. Tap the broadcast button and start broadcasting with Luma.\n3. Switch to the app you want to caption."
+                )
+            } actions: {
+                BroadcastPickerButton()
+                    .frame(width: 52, height: 52)
+                    .background(.quaternary, in: .circle)
+            }
+        } else {
+            defaultEmptyState
+        }
+        #else
+        defaultEmptyState
+        #endif
+    }
+
+    private var defaultEmptyState: some View {
+        // A blank scroll view on first launch reads as broken; tell the
+        // user the app is ready (or already listening) instead.
+        ContentUnavailableView {
+            Label("No Captions Yet", systemImage: "captions.bubble")
+        } description: {
+            if store.sessionState == .idle {
+                Text("Press Start to begin live captions.")
+            } else {
+                Text("Listening…")
+            }
         }
     }
 
