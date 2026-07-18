@@ -11,10 +11,12 @@ import os
 /// macOS 26) and pumped into the analyzer's input sequence; transcriber
 /// results are mapped to domain `TranscriptEvent`s.
 actor SpeechAnalyzerTranscriber: TranscriptionProviding {
-    /// `finalizeAndFinishThroughEndOfInput()` can fail to return (observed
-    /// when the analyzer received no audio at all); after this long the
-    /// analyzer is cancelled instead so `finish()` always completes.
+    /// Bounds on the analyzer's teardown calls. Both finalize AND
+    /// `cancelAndFinishNow()` were observed to never return on a zero-audio
+    /// session (iOS 26 beta, field log 2026-07-18), so every teardown await
+    /// goes through `Deadline` and a hung analyzer is abandoned outright.
     private static let finalizeTimeout: Duration = .seconds(5)
+    private static let cancelTimeout: Duration = .seconds(2)
 
     private let logger = BroadcastAudio.makeLogger(category: "Transcriber")
     private var transcriber: SpeechTranscriber?
@@ -134,28 +136,31 @@ actor SpeechAnalyzerTranscriber: TranscriptionProviding {
         inputContinuation?.finish()
         inputContinuation = nil
         guard let analyzer else { return }
+        // Detach immediately: once teardown starts, this instance never
+        // touches the (possibly hung) analyzer again.
+        self.analyzer = nil
 
-        // With zero audio fed, finalize never returns — cancel instead.
         if fedInputCount == 0 {
+            // Zero audio: finalize is known to hang; cancel — with a bound,
+            // because the cancel hangs on such an analyzer too.
             logger.info("finish: no audio was fed, cancelling instead of finalizing")
-            await analyzer.cancelAndFinishNow()
-            self.analyzer = nil
+            let returned = await Deadline.run(Self.cancelTimeout) {
+                await analyzer.cancelAndFinishNow()
+            }
+            if !returned {
+                logger.error("finish: cancelAndFinishNow did not return, abandoning the analyzer")
+            }
             return
         }
-        // Belt and braces: even with audio fed, never let a wedged finalize
-        // hang the session's stop path.
-        let watchdog = Task { [logger] in
-            try? await Task.sleep(for: Self.finalizeTimeout)
-            guard !Task.isCancelled else { return }
-            logger.error("finish: finalize timed out, cancelling the analyzer")
-            await analyzer.cancelAndFinishNow()
+        let finalized = await Deadline.run(Self.finalizeTimeout) {
+            try? await analyzer.finalizeAndFinishThroughEndOfInput()
         }
-        defer {
-            watchdog.cancel()
-            self.analyzer = nil
+        if finalized {
+            logger.info("finish: finalized after \(self.fedInputCount, privacy: .public) inputs")
+        } else {
+            logger.error("finish: finalize timed out, abandoning the analyzer")
+            Task { await analyzer.cancelAndFinishNow() }
         }
-        try await analyzer.finalizeAndFinishThroughEndOfInput()
-        logger.info("finish: finalized after \(self.fedInputCount, privacy: .public) inputs")
     }
 
     func cancel() async {
@@ -163,8 +168,14 @@ actor SpeechAnalyzerTranscriber: TranscriptionProviding {
         pumpTask = nil
         inputContinuation?.finish()
         inputContinuation = nil
-        await analyzer?.cancelAndFinishNow()
-        analyzer = nil
+        guard let analyzer else { return }
+        self.analyzer = nil
+        let returned = await Deadline.run(Self.cancelTimeout) {
+            await analyzer.cancelAndFinishNow()
+        }
+        if !returned {
+            logger.error("cancel: cancelAndFinishNow did not return, abandoning the analyzer")
+        }
     }
 
     private func pump(

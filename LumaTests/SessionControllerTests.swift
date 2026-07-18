@@ -174,6 +174,25 @@ struct SessionControllerTests {
         #expect(store.sessionState == .idle)
     }
 
+    @Test func stopCompletesEvenWhenCancelAlsoHangs() async {
+        // Device reality (field log 2026-07-18): on a zero-audio session both
+        // finalize AND cancelAndFinishNow hang, and the event stream never
+        // ends. stop() must abandon them and still reach idle.
+        let store = SessionStore()
+        let controller = SessionController(
+            store: store,
+            capabilities: MockCapabilities(),
+            transcription: FullyHangingTranscriber(),
+            translation: MockTranslator(),
+            audioProviderFactory: { _ in MockAudioProvider() },
+            stopTimeout: .milliseconds(200))
+
+        await controller.start(languagePair: .default, inputKind: .microphone)
+        #expect(store.sessionState == .running)
+        await controller.stop()
+        #expect(store.sessionState == .idle)
+    }
+
     @Test func startIsIgnoredWhileRunning() async {
         let (store, controller) = makeController(events: [])
         await controller.start(languagePair: .default, inputKind: .microphone)

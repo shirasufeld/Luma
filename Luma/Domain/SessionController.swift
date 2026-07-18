@@ -5,6 +5,7 @@ import Foundation
 /// audio capture → transcription events → store updates. Translation of
 /// finalized segments hooks in downstream of the event loop.
 actor SessionController {
+    private let logger = BroadcastAudio.makeLogger(category: "Session")
     private let store: SessionStore
     private let capabilities: any CapabilityChecking
     private let transcription: any TranscriptionProviding
@@ -148,23 +149,26 @@ actor SessionController {
 
         await audioProvider?.stop()
         audioProvider = nil
-        // Bounded finish: a transcriber whose finalize hangs (e.g. it never
-        // received audio) must not strand the session in `.stopping`.
+        // Nothing below may be awaited unboundedly: the transcriber's
+        // teardown can hang outright (even its cancel — see `Deadline`), and
+        // a hung transcriber never ends its event stream either. Overruns
+        // are abandoned so the session always reaches idle.
         let transcription = self.transcription
-        let finishTask = Task { try await transcription.finish() }
-        let stopWatchdog = Task { [stopTimeout] in
-            try? await Task.sleep(for: stopTimeout)
-            guard !Task.isCancelled else { return }
-            await transcription.cancel()
+        let finished = await Deadline.run(stopTimeout) {
+            do { try await transcription.finish() } catch { await transcription.cancel() }
         }
-        do {
-            try await finishTask.value
-        } catch {
-            await transcription.cancel()
+        if !finished {
+            logger.error("stop: transcription.finish() overran the deadline, abandoning it")
+            Task { await transcription.cancel() }
         }
-        stopWatchdog.cancel()
-        // Let the event task drain remaining finalized results.
-        _ = await eventTask?.value
+        if let eventTask {
+            // Normally drains the remaining finalized results within moments.
+            let drained = await Deadline.run(stopTimeout) { _ = await eventTask.value }
+            if !drained {
+                logger.error("stop: event stream did not end, cancelling its task")
+                eventTask.cancel()
+            }
+        }
         eventTask = nil
 
         // Then let queued translations finish; live volatile translation

@@ -131,6 +131,38 @@ actor HangingTranscriber: TranscriptionProviding {
     }
 }
 
+/// Worst-case transcriber: `finish()` AND `cancel()` hang forever and the
+/// event stream never ends — replicating the observed device behavior where
+/// every SpeechAnalyzer teardown call on a zero-audio session hangs. Only a
+/// deadline-and-abandon stop path can get past this one.
+actor FullyHangingTranscriber: TranscriptionProviding {
+    func prepare(
+        locale: Locale,
+        onModelState: @escaping @Sendable (TranscriptionModelState) -> Void
+    ) async throws -> Locale {
+        onModelState(.ready)
+        return locale
+    }
+
+    func start(
+        consuming audio: AsyncStream<AudioChunk>
+    ) async throws -> AsyncThrowingStream<TranscriptEvent, any Error> {
+        AsyncThrowingStream { _ in }
+    }
+
+    func finish() async throws {
+        await hangForever()
+    }
+
+    func cancel() async {
+        await hangForever()
+    }
+
+    private func hangForever() async {
+        await withCheckedContinuation { (_: CheckedContinuation<Void, Never>) in }
+    }
+}
+
 /// Translator that wraps text in guillemets so tests can assert the mapping.
 /// An optional per-call delay simulates a slow model for drain-order tests.
 actor MockTranslator: TranslationProviding {
