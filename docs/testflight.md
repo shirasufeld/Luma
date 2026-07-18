@@ -164,13 +164,16 @@ codesign -d --entitlements - --xml \
       模型下载、导出保存需真人完整过一遍
 - [ ] **iOS 真机人工验证**:广播扩展端到端、PiP、后台采集、扩展意外终止后的行为
       (此前受无付费账号阻塞,现可执行)
-- [ ] **iOS「广播中无字幕」现场诊断**(build 2 带全链路插桩):Console.app 连真机,
-      过滤 `subsystem:io.github.shirasufeld.Luma`(勾选 Include Info/Debug)。
-      判读:`BroadcastExtension` 类目的一次性 `source format:` 行给出真实源格式;
-      每 2s 的 `heartbeat received=… forwarded=… dropped=…` 行——
-      forwarded>0 且无字幕 ⇒ app 侧(看 `Transcriber` 类目);dropped>0 ⇒
-      `dropped sample (原因)` 直接点名;received=0 ⇒ 该内容不产生 `.audioApp`。
-      免工具判读:广播徽标绿 + 电平计在动 + 无字幕 ⇒ 转录侧;电平计平直 ⇒ 生产端
+- [x] **iOS「广播中无字幕」**:build 2 修复(真机日志 `forwarded=2948 dropped=0`,
+      正常 finalize)。**根因判定(2026-07-18 宿主差分实验)**:build 1 旧转换管线
+      在 macOS 27 宿主上对合成全矩阵(interleaved/non-interleaved × Int16/Float32 ×
+      little/big-endian × mono/stereo)**全部通过且保真度完美**(BE vs LE 逐样本
+      maxDiff=0)——三处 PCM 加固在格式能力维度均未被证明承重。现存最有力根因候选:
+      app 侧 pump 的 `break` bug(单次转换失败即静默终止整条输入流,build 2 同轮
+      修复,失败模式与现象完全吻合);次候选:iOS 26 设备 runtime 与宿主的转换行为
+      差异。**定夺证据**:下次广播测试先开 Console 采集再启动广播,捕获扩展一次性
+      `source format: rate=… ch=… bits=… flags=…` 行(每次广播启动只打一条)。
+      加固代码暂不删减(承重件未定,删减属赌博);证据落地后再做最终瘦身
 - [ ] **干净环境验证**:非开发机(或本机新建用户)启动 Release app,确认首启权限
       弹窗与 icon 显示正常
 - [ ] **Beta Xcode 构建的接受度**:本项目必须用 Xcode 27 beta 编译(macOS/iOS 27 API)。

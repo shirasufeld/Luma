@@ -123,7 +123,7 @@ struct TranscriptSessionView: View {
 
             if store.inputKind == .systemAudio {
                 // Backed so the system glyph reads as a tappable control.
-                BroadcastPickerButton()
+                BroadcastPickerButton(size: 44)
                     .frame(width: 44, height: 44)
                     .background(.quaternary, in: .circle)
             }
@@ -297,7 +297,7 @@ struct TranscriptSessionView: View {
                     "To caption another app's audio:\n1. Press Start.\n2. Tap the broadcast button and start broadcasting with Luma.\n3. Switch to the app you want to caption."
                 )
             } actions: {
-                BroadcastPickerButton()
+                BroadcastPickerButton(size: 52)
                     .frame(width: 52, height: 52)
                     .background(.quaternary, in: .circle)
             }

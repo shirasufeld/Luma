@@ -26,3 +26,4 @@ BuildConfig/Local.xcconfig
 
 # Reference project (requirements reference only, not part of this repo)
 reference/
+Logs/

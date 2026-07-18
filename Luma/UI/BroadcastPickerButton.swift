@@ -8,9 +8,15 @@ import UIKit
 /// means one tap starts Luma's broadcast directly (no extension chooser); the
 /// microphone toggle is hidden because we only caption other apps' audio.
 struct BroadcastPickerButton: UIViewRepresentable {
+    /// Must match the SwiftUI `.frame` the button is embedded with: the
+    /// inner UIButton keeps the creation-time frame, so a mismatch leaves
+    /// the glyph off-center against any backing shape (field bug: a 52 pt
+    /// button squeezed into a 44 pt frame sat 4 pt off its backing circle).
+    var size: CGFloat = 44
+
     func makeUIView(context: Context) -> RPSystemBroadcastPickerView {
         let picker = RPSystemBroadcastPickerView(
-            frame: CGRect(x: 0, y: 0, width: 52, height: 52))
+            frame: CGRect(origin: .zero, size: CGSize(width: size, height: size)))
         picker.preferredExtension = BroadcastAudio.preferredExtensionID
         picker.showsMicrophoneButton = false
         // The system control ships without a meaningful VoiceOver label, and
@@ -20,6 +26,7 @@ struct BroadcastPickerButton: UIViewRepresentable {
         picker.accessibilityLabel = label
         picker.accessibilityHint = hint
         for case let button as UIButton in picker.subviews {
+            button.frame = picker.bounds
             button.accessibilityLabel = label
             button.accessibilityHint = hint
         }
