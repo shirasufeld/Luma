@@ -399,11 +399,14 @@ struct TranscriptSessionView: View {
             if let latency = store.latency,
                 store.sessionState == .running || store.sessionState == .paused
             {
-                // POSIX locale: a fixed decimal point for a technical readout,
+                // POSIX locale: a fixed format for a technical readout,
                 // independent of the device region (the app language override
-                // doesn't reach String(format:)).
+                // doesn't reach String(format:)). Milliseconds: at caption
+                // latencies "0.1 s" carried almost no information.
                 Label(
-                    String(format: "%.1f s", locale: Locale(identifier: "en_US_POSIX"), latency),
+                    String(
+                        format: "%.0f ms", locale: Locale(identifier: "en_US_POSIX"),
+                        latency * 1000),
                     systemImage: "timer"
                 )
                 .monospacedDigit()
