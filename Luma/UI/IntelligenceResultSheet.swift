@@ -170,6 +170,12 @@ struct IntelligenceResultSheet: View {
     @State private var exportType: UTType = .plainText
     @Environment(\.dismiss) private var dismiss
 
+    /// Sheets get a fresh presentation environment, so the in-app language
+    /// override must be re-applied here (same as the Settings sheet) — the
+    /// card must follow the user's chosen app language, not the system's.
+    @AppStorage(AppLanguage.defaultsKey)
+    private var appLanguageRaw = AppLanguage.systemValue
+
     init(
         operation: IntelligenceOperation,
         entries: [SubtitleEntry],
@@ -212,6 +218,7 @@ struct IntelligenceResultSheet: View {
         #if os(macOS)
         .frame(minWidth: 460, idealWidth: 520, minHeight: 380, idealHeight: 480)
         #endif
+        .appLanguage(appLanguageRaw)
         .task { model.start() }
         .onDisappear { model.cancel() }
         .fileExporter(
