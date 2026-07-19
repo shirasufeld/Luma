@@ -1,6 +1,198 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Concise Rewrite" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Concise Rewrite" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "精简版本" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "精簡版本" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "簡潔版" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "간결한 버전" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Versión concisa" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Version concise" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Prägnante Fassung" } }
+      }
+    },
+    "Concise…" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Concise…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "精简…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "精簡…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "簡潔…" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "간결하게…" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conciso…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Concis…" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Prägnant…" } }
+      }
+    },
+    "Convert to List…" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Convert to List…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "转为列表…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "轉為列表…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "リスト化…" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "목록으로 변환…" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Convertir en lista…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Convertir en liste…" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "In Liste umwandeln…" } }
+      }
+    },
+    "Convert to Table…" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Convert to Table…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "转为表格…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "轉為表格…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "表形式化…" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "표로 변환…" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Convertir en tabla…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Convertir en tableau…" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "In Tabelle umwandeln…" } }
+      }
+    },
+    "Detail" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Detail" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "说明" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "說明" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "詳細" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "설명" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Detalle" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Détail" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Detail" } }
+      }
+    },
+    "Friendly Rewrite" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Friendly Rewrite" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "友好版本" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "友善版本" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドリー版" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "친근한 버전" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Versión amistosa" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Version amicale" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Freundliche Fassung" } }
+      }
+    },
+    "Friendly…" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Friendly…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "友好语气…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "友善語氣…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドリー…" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "친근하게…" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Amistoso…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Amical…" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Freundlich…" } }
+      }
+    },
+    "Key Points" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Key Points" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "要点" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "要點" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "要点" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "요점" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Puntos clave" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Points clés" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kernpunkte" } }
+      }
+    },
+    "Key Points…" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Key Points…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "要点…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "要點…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "要点抽出…" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "요점…" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Puntos clave…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Points clés…" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kernpunkte…" } }
+      }
+    },
+    "Professional Rewrite" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Professional Rewrite" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "专业版本" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "專業版本" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロフェッショナル版" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "전문적인 버전" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Versión profesional" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Version professionnelle" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Professionelle Fassung" } }
+      }
+    },
+    "Professional…" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Professional…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "专业语气…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "專業語氣…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロフェッショナル…" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "전문적으로…" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Profesional…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Professionnel…" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Professionell…" } }
+      }
+    },
+    "Rewrite…" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rewrite…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重写…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "重寫…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "書き直し…" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "다시 쓰기…" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Reescribir…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Réécrire…" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Umschreiben…" } }
+      }
+    },
+    "Rewritten Transcript" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rewritten Transcript" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重写后的转录" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "重寫後的轉錄" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "書き直した文字起こし" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "다시 쓴 전사" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Transcripción reescrita" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Transcription réécrite" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Umgeschriebenes Transkript" } }
+      }
+    },
+    "Topic" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Topic" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "主题" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "主題" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "トピック" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "주제" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tema" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Sujet" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Thema" } }
+      }
+    },
+    "Transcript List" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Transcript List" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "转录列表" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "轉錄列表" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "文字起こしリスト" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "전사 목록" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Lista de la transcripción" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Liste de la transcription" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Transkript-Liste" } }
+      }
+    },
+    "Transcript Table" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Transcript Table" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "转录表格" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "轉錄表格" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "文字起こし表" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "전사 표" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tabla de la transcripción" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Tableau de la transcription" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Transkript-Tabelle" } }
+      }
+    },
     "Apple Intelligence" : {
       "localizations" : {
         "en" : {
