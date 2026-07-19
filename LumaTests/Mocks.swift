@@ -190,6 +190,74 @@ actor MockTranslator: TranslationProviding {
     }
 }
 
+/// Intelligence provider with scripted per-call results (FIFO). An optional
+/// per-call delay simulates a slow model for cancellation tests.
+actor MockIntelligence: IntelligenceProviding {
+    private let availabilityAnswer: AppleIntelligenceAvailability
+    private let supportsTarget: Bool
+    private var transcriptionResults: [Result<[Int: String], IntelligenceError>]
+    private var translationResults: [Result<[Int: String], IntelligenceError>]
+    private let delay: Duration
+    private(set) var transcriptionCalls: [[String]] = []
+    private(set) var translationCalls: [[ProofreadPair]] = []
+
+    init(
+        transcription: [Result<[Int: String], IntelligenceError>] = [],
+        translation: [Result<[Int: String], IntelligenceError>] = [],
+        availability: AppleIntelligenceAvailability = .available,
+        supportsTarget: Bool = true,
+        delay: Duration = .zero
+    ) {
+        transcriptionResults = transcription
+        translationResults = translation
+        availabilityAnswer = availability
+        self.supportsTarget = supportsTarget
+        self.delay = delay
+    }
+
+    func availability(for locale: Locale) async -> AppleIntelligenceAvailability {
+        availabilityAnswer
+    }
+
+    func supportsLanguage(_ language: Locale.Language) async -> Bool { supportsTarget }
+
+    func tokenCount(for text: String) async -> Int? { nil }
+
+    func proofreadTranscription(
+        sentences: [String], context: String?, locale: Locale
+    ) async throws -> [Int: String] {
+        transcriptionCalls.append(sentences)
+        if delay > .zero { try await Task.sleep(for: delay) }
+        guard !transcriptionResults.isEmpty else { return [:] }
+        return try transcriptionResults.removeFirst().get()
+    }
+
+    func proofreadTranslation(
+        pairs: [ProofreadPair], locale: Locale, target: Locale.Language
+    ) async throws -> [Int: String] {
+        translationCalls.append(pairs)
+        if delay > .zero { try await Task.sleep(for: delay) }
+        guard !translationResults.isEmpty else { return [:] }
+        return try translationResults.removeFirst().get()
+    }
+
+    func summarize(chunk: String, locale: Locale) async throws -> TranscriptSummary {
+        TranscriptSummary(abstract: "sum(\(chunk.prefix(8)))", keyPoints: ["k"])
+    }
+
+    func combineSummaries(
+        _ parts: [TranscriptSummary], locale: Locale
+    ) async throws -> TranscriptSummary {
+        TranscriptSummary(
+            abstract: parts.map(\.abstract).joined(separator: " "),
+            keyPoints: parts.flatMap(\.keyPoints))
+    }
+
+    func reformat(chunk: String, previousTail: String?, locale: Locale) async throws -> String {
+        "reformatted(\(chunk.prefix(8)))"
+    }
+}
+
 // MARK: - Shared helpers
 
 nonisolated func makeSegment(

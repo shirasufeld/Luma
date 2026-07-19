@@ -10,6 +10,8 @@ final class AppDependencies {
     let session: SessionController
     let overlay: SubtitleOverlayController
     let exporter: any TranscriptExporting
+    let intelligence: any IntelligenceProviding
+    let proofreader: ProofreadCoordinator
     #if os(iOS)
     /// Broadcast liveness for the system-audio UI (see `BroadcastStateMonitor`).
     let broadcastMonitor = BroadcastStateMonitor()
@@ -19,6 +21,7 @@ final class AppDependencies {
         capabilities: any CapabilityChecking = CapabilityService(),
         transcription: (any TranscriptionProviding)? = nil,
         translation: (any TranslationProviding)? = nil,
+        intelligence: (any IntelligenceProviding)? = nil,
         audioProviderFactory: (@Sendable (AudioInputKind) -> any AudioInputProviding)? = nil
     ) {
         self.capabilities = capabilities
@@ -30,12 +33,17 @@ final class AppDependencies {
         #else
         self.exporter = DocumentExportService()
         #endif
+        let intelligenceService = intelligence ?? AppleIntelligenceService()
+        self.intelligence = intelligenceService
+        let proofreader = ProofreadCoordinator(store: store, intelligence: intelligenceService)
+        self.proofreader = proofreader
         self.session = SessionController(
             store: store,
             capabilities: capabilities,
             transcription: transcription ?? SpeechAnalyzerTranscriber(),
             translation: translation ?? AppleTranslationProvider(),
-            audioProviderFactory: audioProviderFactory ?? Self.makeAudioProvider
+            audioProviderFactory: audioProviderFactory ?? Self.makeAudioProvider,
+            proofreader: proofreader
         )
     }
 

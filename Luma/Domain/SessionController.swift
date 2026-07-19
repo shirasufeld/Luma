@@ -11,6 +11,9 @@ actor SessionController {
     private let transcription: any TranscriptionProviding
     private let translation: any TranslationProviding
     private let audioProviderFactory: @Sendable (AudioInputKind) -> any AudioInputProviding
+    /// Cancelled before a new session starts and on clear, so an in-flight
+    /// proofread never races a resetting transcript.
+    private let proofreader: ProofreadCoordinator?
     /// Upper bound on waiting for the transcriber to finalize during `stop()`;
     /// past it the transcriber is cancelled so the session always reaches idle.
     private let stopTimeout: Duration
@@ -45,6 +48,7 @@ actor SessionController {
         transcription: any TranscriptionProviding,
         translation: any TranslationProviding,
         audioProviderFactory: @escaping @Sendable (AudioInputKind) -> any AudioInputProviding,
+        proofreader: ProofreadCoordinator? = nil,
         stopTimeout: Duration = .seconds(10)
     ) {
         self.store = store
@@ -52,6 +56,7 @@ actor SessionController {
         self.transcription = transcription
         self.translation = translation
         self.audioProviderFactory = audioProviderFactory
+        self.proofreader = proofreader
         self.stopTimeout = stopTimeout
     }
 
@@ -63,6 +68,7 @@ actor SessionController {
         translationMode: TranslationMode = .balanced
     ) async {
         guard state == .idle else { return }
+        await proofreader?.cancelActiveRun()
         state = .preparing
         await store.sessionStateChanged(.preparing)
 
@@ -193,6 +199,7 @@ actor SessionController {
     }
 
     func clearTranscript() async {
+        await proofreader?.cancelActiveRun()
         await store.clearTranscript()
     }
 
