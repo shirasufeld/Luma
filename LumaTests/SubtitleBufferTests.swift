@@ -111,4 +111,112 @@ struct SubtitleBufferTests {
         entry.correctedTranslation = ProofreadCorrection(text: "你好", batchID: UUID())
         #expect(entry.displayTranslatedText == "你好")
     }
+
+    @Test func proofreadBatchLifecycle() {
+        var buffer = SubtitleBuffer()
+        let first = makeSegment("aaa", start: 0, end: 1)
+        let second = makeSegment("bbb", start: 1, end: 2)
+        buffer.applyFinalized(first)
+        buffer.applyFinalized(second)
+        #expect(buffer.entriesAfterBoundary.count == 2)
+
+        let batch = ProofreadBatch(id: UUID(), previousBoundaryID: nil, boundaryID: second.id)
+        buffer.beginProofreadBatch(batch)
+        #expect(buffer.proofreadBoundaryID == second.id)
+        #expect(buffer.entriesAfterBoundary.isEmpty)
+
+        buffer.applyProofread(
+            [
+                ProofreadCorrectionUpdate(
+                    segmentID: first.id, correctedText: "AAA", correctedTranslation: nil)
+            ],
+            batchID: batch.id)
+        #expect(buffer.entries[0].displayText == "AAA")
+        #expect(buffer.entries[0].segment.plainText == "aaa")
+
+        // A stale batch is refused; an unknown UUID no-ops.
+        buffer.applyProofread(
+            [
+                ProofreadCorrectionUpdate(
+                    segmentID: first.id, correctedText: "zzz", correctedTranslation: nil)
+            ],
+            batchID: UUID())
+        #expect(buffer.entries[0].displayText == "AAA")
+        buffer.applyProofread(
+            [
+                ProofreadCorrectionUpdate(
+                    segmentID: UUID(), correctedText: "zzz", correctedTranslation: nil)
+            ],
+            batchID: batch.id)
+
+        buffer.revertLastProofread()
+        #expect(buffer.entries[0].displayText == "aaa")
+        #expect(buffer.proofreadBoundaryID == nil)
+        #expect(buffer.lastProofreadBatch == nil)
+    }
+
+    @Test func proofreadRollbackAndAbandon() {
+        var buffer = SubtitleBuffer()
+        let first = makeSegment("aaa", start: 0, end: 1)
+        let second = makeSegment("bbb", start: 1, end: 2)
+        buffer.applyFinalized(first)
+        buffer.applyFinalized(second)
+        let batch = ProofreadBatch(id: UUID(), previousBoundaryID: nil, boundaryID: second.id)
+        buffer.beginProofreadBatch(batch)
+
+        buffer.rollbackProofreadBoundary(to: first.id, batchID: batch.id)
+        #expect(buffer.proofreadBoundaryID == first.id)
+        // Rollback for a stale batch is refused.
+        buffer.rollbackProofreadBoundary(to: nil, batchID: UUID())
+        #expect(buffer.proofreadBoundaryID == first.id)
+
+        buffer.abandonProofreadBatch(batch.id)
+        #expect(buffer.proofreadBoundaryID == nil)
+        #expect(buffer.lastProofreadBatch == nil)
+    }
+
+    @Test func secondBatchReplacesRevertTarget() {
+        var buffer = SubtitleBuffer()
+        let first = makeSegment("one", start: 0, end: 1)
+        let second = makeSegment("two", start: 1, end: 2)
+        buffer.applyFinalized(first)
+        buffer.applyFinalized(second)
+
+        let batchA = ProofreadBatch(id: UUID(), previousBoundaryID: nil, boundaryID: first.id)
+        buffer.beginProofreadBatch(batchA)
+        buffer.applyProofread(
+            [
+                ProofreadCorrectionUpdate(
+                    segmentID: first.id, correctedText: "ONE", correctedTranslation: nil)
+            ],
+            batchID: batchA.id)
+
+        let batchB = ProofreadBatch(
+            id: UUID(), previousBoundaryID: first.id, boundaryID: second.id)
+        buffer.beginProofreadBatch(batchB)
+        buffer.applyProofread(
+            [
+                ProofreadCorrectionUpdate(
+                    segmentID: second.id, correctedText: "TWO", correctedTranslation: nil)
+            ],
+            batchID: batchB.id)
+
+        // Revert undoes only batch B; batch A's correction survives and the
+        // divider returns to batch A's boundary.
+        buffer.revertLastProofread()
+        #expect(buffer.entries[0].displayText == "ONE")
+        #expect(buffer.entries[1].displayText == "two")
+        #expect(buffer.proofreadBoundaryID == first.id)
+    }
+
+    @Test func clearResetsProofreadState() {
+        var buffer = SubtitleBuffer()
+        let segment = makeSegment("aaa", start: 0, end: 1)
+        buffer.applyFinalized(segment)
+        buffer.beginProofreadBatch(
+            ProofreadBatch(id: UUID(), previousBoundaryID: nil, boundaryID: segment.id))
+        buffer.clear()
+        #expect(buffer.proofreadBoundaryID == nil)
+        #expect(buffer.lastProofreadBatch == nil)
+    }
 }
