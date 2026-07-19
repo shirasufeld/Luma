@@ -11,16 +11,16 @@ import Foundation
 actor ProofreadCoordinator {
     private let store: SessionStore
     private let intelligence: any IntelligenceProviding
-    /// Estimated-token budget per chunk. Instructions (~250) + sparse
-    /// corrections output stay well inside the 26-era ~4096 window;
-    /// underestimates are caught by error-driven bisect.
+    /// Estimated-token budget per chunk. Instructions (~350) + echo-all
+    /// corrections output (≈ input size) stay well inside the 26-era ~4096
+    /// window; underestimates are caught by error-driven bisect.
     private let inputBudget: Int
     private var runTask: Task<Void, Never>?
 
     init(
         store: SessionStore,
         intelligence: any IntelligenceProviding,
-        inputBudget: Int = 1400
+        inputBudget: Int = 900
     ) {
         self.store = store
         self.intelligence = intelligence
@@ -44,11 +44,11 @@ actor ProofreadCoordinator {
             }
         }
         guard effective.isEnabled else { return }
-        guard let (entries, context, batch) = await store.beginProofread() else { return }
+        guard let (entries, previous, batch) = await store.beginProofread() else { return }
         let resolved = effective
         runTask = Task {
             await self.run(
-                entries: entries, context: context, batch: batch,
+                entries: entries, previous: previous, batch: batch,
                 options: resolved, locale: locale, target: target)
         }
     }
@@ -70,7 +70,7 @@ actor ProofreadCoordinator {
     // MARK: - Run
 
     private func run(
-        entries: [SubtitleEntry], context: String?, batch: ProofreadBatch,
+        entries: [SubtitleEntry], previous: SubtitleEntry?, batch: ProofreadBatch,
         options: ProofreadOptions, locale: Locale, target: Locale.Language?
     ) async {
         defer { runTask = nil }
@@ -78,13 +78,29 @@ actor ProofreadCoordinator {
         let translationByID: [UUID: String] = entries.reduce(into: [:]) { result, entry in
             if case .translated(let text) = entry.translation { result[entry.id] = text }
         }
+
+        // Deterministic pre-pass: hand stray leading punctuation back to the
+        // sentence it belongs to before the model sees anything.
+        let scope = entries.map { ProofreadSentence(id: $0.id, text: $0.displayText) }
+        let previousSentence = previous.map { ProofreadSentence(id: $0.id, text: $0.displayText) }
+        let (normalized, normalizationChanges) = PunctuationNormalizer.normalize(
+            scope, previous: previousSentence)
+        var appliedAny = false
+        if !normalizationChanges.isEmpty {
+            let updates = normalizationChanges.map { id, text in
+                ProofreadCorrectionUpdate(segmentID: id, correctedText: text, correctedTranslation: nil)
+            }
+            await store.applyProofreadCorrections(updates, batchID: batch.id)
+            appliedAny = true
+        }
+        let contextText = previousSentence.map { normalizationChanges[$0.id] ?? $0.text }
+
         var remaining = IntelligenceChunker.chunks(
-            entries: entries.map { (id: $0.id, text: $0.displayText) },
-            budget: inputBudget, initialContext: context)
+            entries: normalized.map { (id: $0.id, text: $0.text) },
+            budget: inputBudget, initialContext: contextText)
         var totalPlanned = remaining.count
         await store.proofreadChunksPlanned(totalPlanned, batchID: batch.id)
 
-        var appliedAny = false
         var anyChunkSucceeded = false
         var lastCommittedID = batch.previousBoundaryID
         var abortMessage: String?

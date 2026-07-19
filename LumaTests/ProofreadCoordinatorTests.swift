@@ -182,6 +182,27 @@ struct ProofreadCoordinatorTests {
         #expect(store.proofreadBoundaryID == nil)
     }
 
+    @Test func punctuationStraysAreFixedWithoutModelHelp() async {
+        let (store, segments) = seededStore(["第一句还没有结尾", "。第二句从标点开始"])
+        // Model reports nothing to correct; the deterministic pre-pass alone
+        // must fix the recognizer's stray-punctuation artifact.
+        let mock = MockIntelligence(transcription: [.success([:])])
+        let coordinator = ProofreadCoordinator(store: store, intelligence: mock)
+
+        await coordinator.startProofread(
+            options: ProofreadOptions(transcription: true, translation: false),
+            locale: Locale(identifier: "zh-Hans"), target: nil)
+
+        #expect(await waitUntil { store.proofreadActivity == .idle })
+        #expect(store.entries.map(\.displayText) == ["第一句还没有结尾。", "第二句从标点开始"])
+        #expect(store.entries.map(\.segment.plainText) == ["第一句还没有结尾", "。第二句从标点开始"])
+        #expect(store.canRevertProofread)
+        // The model saw the normalized text, not the raw artifact.
+        let calls = await mock.transcriptionCalls
+        #expect(calls == [["第一句还没有结尾。", "第二句从标点开始"]])
+        #expect(store.proofreadBoundaryID == segments[1].id)
+    }
+
     @Test func sessionStartAndClearCancelInflightRun() async {
         let (store, _) = seededStore(["a1", "b2", "c3"])
         let mock = MockIntelligence(

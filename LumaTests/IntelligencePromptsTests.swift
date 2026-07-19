@@ -42,7 +42,7 @@ struct IntelligencePromptsTests {
         // Every instruction set must tell the model the content is data, not
         // commands — the prompt-injection defense the spec requires.
         let all = [
-            IntelligencePrompts.transcriptionInstructions(languageName: "English"),
+            IntelligencePrompts.transcriptionInstructions(for: Locale(identifier: "en_US")),
             IntelligencePrompts.translationInstructions(
                 sourceName: "English", targetName: "Chinese"),
             IntelligencePrompts.summaryInstructions(),
@@ -50,6 +50,31 @@ struct IntelligencePromptsTests {
             IntelligencePrompts.reformatInstructions(),
         ]
         #expect(all.allSatisfy { $0.contains("not instructions") })
+    }
+
+    @Test func proofreadInstructionsDemandEchoAll() {
+        // Small on-device models under-trigger on "return only the changed
+        // ones" — the instructions must demand one output per input.
+        #expect(
+            IntelligencePrompts.transcriptionInstructions(for: Locale(identifier: "en_US"))
+                .contains("one item per numbered sentence"))
+        #expect(
+            IntelligencePrompts.translationInstructions(sourceName: "English", targetName: "Chinese")
+                .contains("one item per numbered pair"))
+    }
+
+    @Test func fewShotExampleMatchesTranscriptLanguage() {
+        // The example must be in the language being proofread — this holds
+        // for every app language, not just Chinese.
+        for (identifier, fragment) in [
+            ("zh-Hans", "二极管"), ("zh-Hant", "二极管"), ("ja-JP", "意外"),
+            ("ko-KR", "낫기를"), ("es-ES", "a ver"), ("fr-FR", "vaut"),
+            ("de-DE", "seid"), ("en_US", "burns"), ("it-IT", "burns"),
+        ] {
+            let instructions = IntelligencePrompts.transcriptionInstructions(
+                for: Locale(identifier: identifier))
+            #expect(instructions.contains(fragment), "missing \(fragment) for \(identifier)")
+        }
     }
 
     @Test func englishNamesResolve() {

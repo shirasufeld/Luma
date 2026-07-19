@@ -168,19 +168,20 @@ final class SessionStore {
     var canRevertProofread: Bool { buffer.lastProofreadBatch != nil }
     var proofreadEligibleCount: Int { buffer.entriesAfterBoundary.count }
 
-    /// Atomic snapshot + batch start: eligibility, the read-only context
-    /// sentence, and the divider move all happen in one main-actor turn.
-    /// Returns nil while a run is active or nothing is eligible.
-    func beginProofread() -> (entries: [SubtitleEntry], context: String?, batch: ProofreadBatch)? {
+    /// Atomic snapshot + batch start: eligibility, the entry just before the
+    /// scope (for cross-boundary punctuation hand-off and model context), and
+    /// the divider move all happen in one main-actor turn. Returns nil while
+    /// a run is active or nothing is eligible.
+    func beginProofread() -> (entries: [SubtitleEntry], previous: SubtitleEntry?, batch: ProofreadBatch)? {
         guard proofreadActivity == .idle else { return nil }
         let eligible = buffer.entriesAfterBoundary
         guard let last = eligible.last else { return nil }
-        var context: String?
+        var previous: SubtitleEntry?
         if let firstID = eligible.first?.id,
             let firstIndex = buffer.entries.firstIndex(where: { $0.id == firstID }),
             firstIndex > 0
         {
-            context = buffer.entries[firstIndex - 1].displayText
+            previous = buffer.entries[firstIndex - 1]
         }
         let batch = ProofreadBatch(
             id: UUID(),
@@ -189,7 +190,7 @@ final class SessionStore {
         buffer.beginProofreadBatch(batch)
         proofreadMessage = nil
         proofreadActivity = .running(batchID: batch.id, chunksDone: 0, chunksTotal: 0)
-        return (eligible, context, batch)
+        return (eligible, previous, batch)
     }
 
     func proofreadChunksPlanned(_ total: Int, batchID: UUID) {

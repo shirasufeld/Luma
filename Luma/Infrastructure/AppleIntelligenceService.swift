@@ -9,16 +9,16 @@ import FoundationModels
 private struct SentenceCorrections {
     @Guide(
         description:
-            "Corrections for sentences that contain recognition errors. Empty when every sentence is already correct."
+            "Exactly one item per numbered input sentence, in the same order — corrected, or copied verbatim when already correct."
     )
     var corrections: [SentenceCorrection]
 }
 
 @Generable
 private struct SentenceCorrection {
-    @Guide(description: "The number of the sentence being corrected, copied from the input.")
+    @Guide(description: "The number of the sentence, copied from the input.")
     var index: Int
-    @Guide(description: "The full corrected sentence.")
+    @Guide(description: "The corrected sentence, or the input sentence verbatim when it has no errors.")
     var text: String
 }
 
@@ -26,16 +26,16 @@ private struct SentenceCorrection {
 private struct TranslationCorrections {
     @Guide(
         description:
-            "Corrections for pairs whose translation is wrong. Empty when every translation is correct."
+            "Exactly one item per numbered input pair, in the same order — the translation corrected, or copied verbatim when already correct."
     )
     var corrections: [TranslationCorrection]
 }
 
 @Generable
 private struct TranslationCorrection {
-    @Guide(description: "The number of the pair being corrected, copied from the input.")
+    @Guide(description: "The number of the pair, copied from the input.")
     var index: Int
-    @Guide(description: "The full corrected translation.")
+    @Guide(description: "The corrected translation, or the input translation verbatim when it has no errors.")
     var translation: String
 }
 
@@ -89,8 +89,7 @@ nonisolated final class AppleIntelligenceService: IntelligenceProviding {
         sentences: [String], context: String?, locale: Locale
     ) async throws -> [Int: String] {
         let raw = try await Self.sentenceCorrections(
-            instructions: IntelligencePrompts.transcriptionInstructions(
-                languageName: IntelligencePrompts.englishName(for: locale)),
+            instructions: IntelligencePrompts.transcriptionInstructions(for: locale),
             prompt: IntelligencePrompts.transcriptionPrompt(
                 sentences: sentences, context: context))
         return Self.validatedCorrections(raw, against: sentences)
@@ -165,7 +164,7 @@ nonisolated final class AppleIntelligenceService: IntelligenceProviding {
             let response = try await session.respond(
                 to: prompt, generating: SentenceCorrections.self,
                 options: GenerationOptions(
-                    samplingMode: .greedy, maximumResponseTokens: 1200))
+                    samplingMode: .greedy, maximumResponseTokens: 2000))
             return response.content.corrections.map { ($0.index, $0.text) }
         } catch {
             throw mapped(error)
@@ -181,7 +180,7 @@ nonisolated final class AppleIntelligenceService: IntelligenceProviding {
             let response = try await session.respond(
                 to: prompt, generating: TranslationCorrections.self,
                 options: GenerationOptions(
-                    samplingMode: .greedy, maximumResponseTokens: 1200))
+                    samplingMode: .greedy, maximumResponseTokens: 2000))
             return response.content.corrections.map { ($0.index, $0.translation) }
         } catch {
             throw mapped(error)
@@ -199,10 +198,10 @@ nonisolated final class AppleIntelligenceService: IntelligenceProviding {
 
     // MARK: - Validation gate
 
-    /// Rejects structurally suspicious corrections: out-of-range or
-    /// duplicate-free index handling, empty output, no-op echoes, and
-    /// blow-ups/truncations beyond 3× either way (hallucination and
-    /// prompt-injection backstop).
+    /// Rejects structurally suspicious corrections: out-of-range indices,
+    /// empty output, no-op echoes, and blow-ups/truncations beyond 3× either
+    /// way (hallucination and prompt-injection backstop). Model output is
+    /// collapsed to a single line — caption rows never contain newlines.
     static func validatedCorrections(
         _ raw: [(index: Int, text: String)], against originals: [String]
     ) -> [Int: String] {
@@ -210,7 +209,12 @@ nonisolated final class AppleIntelligenceService: IntelligenceProviding {
         for (index, text) in raw {
             guard index >= 1, index <= originals.count else { continue }
             let original = originals[index - 1]
-            let corrected = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            let corrected = text
+                .components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
             guard !corrected.isEmpty, corrected != original else { continue }
             let ratio = Double(corrected.count) / Double(max(original.count, 1))
             guard ratio >= 1.0 / 3.0, ratio <= 3.0 else { continue }

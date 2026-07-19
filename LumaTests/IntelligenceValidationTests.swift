@@ -32,4 +32,10 @@ struct IntelligenceValidationTests {
             [(index: 1, text: "  fixed  ")], against: ["broken"])
         #expect(validated == [1: "fixed"])
     }
+
+    @Test func validationCollapsesNewlinesToOneLine() {
+        let validated = AppleIntelligenceService.validatedCorrections(
+            [(index: 1, text: "fixed\nacross\n\nlines")], against: ["broken text here"])
+        #expect(validated == [1: "fixed across lines"])
+    }
 }
