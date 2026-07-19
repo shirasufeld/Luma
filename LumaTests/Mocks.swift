@@ -9,6 +9,7 @@ nonisolated struct MockCapabilities: CapabilityChecking {
     var transcription: TranscriptionAvailability = .installed(Locale(identifier: "en-US"))
     var translation: TranslationAvailability = .installed
     var systemAudioCapture: SystemAudioCaptureStatus = .notAttempted
+    var appleIntelligence: AppleIntelligenceAvailability = .available
 
     func microphonePermission() -> PermissionState { microphone }
     func requestMicrophonePermission() async -> PermissionState { microphone }
@@ -22,6 +23,9 @@ nonisolated struct MockCapabilities: CapabilityChecking {
     ) async -> TranslationAvailability { translation }
     func supportedTranslationLanguages() async -> [Locale.Language] {
         [Locale.Language(identifier: "zh-Hans")]
+    }
+    func appleIntelligenceAvailability(for locale: Locale) async -> AppleIntelligenceAvailability {
+        appleIntelligence
     }
 }
 

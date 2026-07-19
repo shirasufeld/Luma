@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import FoundationModels
 import Speech
 import Translation
 
@@ -62,5 +63,21 @@ nonisolated final class CapabilityService: CapabilityChecking {
     @concurrent
     func supportedTranslationLanguages() async -> [Locale.Language] {
         await LanguageAvailability().supportedLanguages
+    }
+
+    @concurrent
+    func appleIntelligenceAvailability(for locale: Locale) async -> AppleIntelligenceAvailability {
+        let model = SystemLanguageModel.default
+        switch model.availability {
+        case .available:
+            return model.supportsLocale(locale) ? .available : .unsupportedLanguage(locale)
+        case .unavailable(let reason):
+            switch reason {
+            case .deviceNotEligible: return .deviceNotEligible
+            case .appleIntelligenceNotEnabled: return .notEnabled
+            case .modelNotReady: return .modelNotReady
+            @unknown default: return .deviceNotEligible
+            }
+        }
     }
 }

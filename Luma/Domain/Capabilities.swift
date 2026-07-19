@@ -41,6 +41,19 @@ nonisolated enum TranslationAvailability: Sendable, Equatable {
     case unsupported
 }
 
+/// Whether the on-device Apple Intelligence model can proofread/rewrite for
+/// a given locale.
+nonisolated enum AppleIntelligenceAvailability: Sendable, Equatable {
+    case available
+    case deviceNotEligible
+    /// Apple Intelligence is off in the system settings.
+    case notEnabled
+    /// Model assets are still downloading.
+    case modelNotReady
+    /// The model is ready but does not support this locale.
+    case unsupportedLanguage(Locale)
+}
+
 /// A point-in-time snapshot of everything the session needs to run.
 nonisolated struct CapabilitySnapshot: Sendable, Equatable {
     var microphone: PermissionState = .notDetermined
@@ -48,4 +61,5 @@ nonisolated struct CapabilitySnapshot: Sendable, Equatable {
     var translation: TranslationAvailability = .unsupported
     /// Last-known outcome of a system-audio capture start (macOS tap path).
     var systemAudioCapture: SystemAudioCaptureStatus = .notAttempted
+    var appleIntelligence: AppleIntelligenceAvailability = .deviceNotEligible
 }
