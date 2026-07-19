@@ -464,7 +464,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = "";
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
 				ENABLE_PREVIEWS = YES;
@@ -496,7 +496,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = "";
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
 				ENABLE_PREVIEWS = YES;
@@ -561,7 +561,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = LumaBroadcastExtension/BroadcastExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LumaBroadcastExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Luma Captions";
@@ -586,7 +586,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = LumaBroadcastExtension/BroadcastExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LumaBroadcastExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Luma Captions";
