@@ -59,6 +59,11 @@ private struct GeneralSettingsView: View {
     @State private var transcriptionLocales: [Locale] = []
     @State private var translationLanguages: [Locale.Language] = []
 
+    @AppStorage(IntelligenceSettingsKey.proofreadTranscription)
+    private var proofreadTranscription = true
+    @AppStorage(IntelligenceSettingsKey.proofreadTranslation)
+    private var proofreadTranslation = true
+
     private var isSessionIdle: Bool { store.sessionState == .idle }
 
     var body: some View {
@@ -118,6 +123,18 @@ private struct GeneralSettingsView: View {
                     .foregroundStyle(.tertiary)
             }
             .disabled(!isSessionIdle)
+            Section {
+                Toggle("Proofread transcription", isOn: $proofreadTranscription)
+                Toggle("Proofread translation", isOn: $proofreadTranslation)
+                Text(
+                    "Smart Proofread fixes recognition and translation errors on device once sentences are finalized."
+                )
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            } header: {
+                // Brand name; never localized.
+                Text(verbatim: "Apple Intelligence")
+            }
             if !isSessionIdle {
                 Text("Stop the session to change languages or input.")
                     .font(.callout)
