@@ -92,4 +92,23 @@ struct SubtitleBufferTests {
         #expect(buffer.entries.isEmpty)
         #expect(buffer.volatileText == nil)
     }
+
+    // MARK: - Proofread
+
+    @Test func displayTextPrefersCorrection() {
+        var entry = SubtitleEntry(segment: makeSegment("helo world", start: 0, end: 1))
+        #expect(entry.displayText == "helo world")
+        entry.correctedText = ProofreadCorrection(text: "hello world", batchID: UUID())
+        #expect(entry.displayText == "hello world")
+        #expect(entry.segment.plainText == "helo world")
+    }
+
+    @Test func displayTranslatedTextPrefersCorrectionThenTranslation() {
+        var entry = SubtitleEntry(segment: makeSegment("hi", start: 0, end: 1))
+        #expect(entry.displayTranslatedText == nil)
+        entry.translation = .translated("你好啊")
+        #expect(entry.displayTranslatedText == "你好啊")
+        entry.correctedTranslation = ProofreadCorrection(text: "你好", batchID: UUID())
+        #expect(entry.displayTranslatedText == "你好")
+    }
 }
