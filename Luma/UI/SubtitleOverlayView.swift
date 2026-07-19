@@ -74,7 +74,7 @@ struct SubtitleOverlayView: View {
         if let volatileText = store.volatileText {
             return String(volatileText.characters)
         }
-        return store.entries.last?.segment.plainText ?? ""
+        return store.entries.last?.displayText ?? ""
     }
 
     private var translationLine: String {
@@ -83,10 +83,7 @@ struct SubtitleOverlayView: View {
         if store.volatileText != nil, let volatileTranslation = store.volatileTranslation {
             return volatileTranslation
         }
-        guard case .translated(let translation) = store.entries.last?.translation else {
-            return ""
-        }
-        return translation
+        return store.entries.last?.displayTranslatedText ?? ""
     }
 
     private var idleText: LocalizedStringKey {

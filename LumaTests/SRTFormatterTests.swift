@@ -62,4 +62,21 @@ struct SRTFormatterTests {
         #expect(SRTFormatter.srtDocument(entries: []) == "")
         #expect(SRTFormatter.textDocument(entries: []) == "")
     }
+
+    @Test func documentsPreferProofreadCorrections() {
+        var entry = SubtitleEntry(
+            segment: makeSegment("helo", start: 0, end: 1),
+            translation: .translated("哈喽"))
+        entry.correctedText = ProofreadCorrection(text: "hello", batchID: UUID())
+        entry.correctedTranslation = ProofreadCorrection(text: "你好", batchID: UUID())
+
+        let text = SRTFormatter.textDocument(entries: [entry])
+        #expect(text == "hello\n你好")
+
+        let srt = SRTFormatter.srtDocument(entries: [entry])
+        #expect(srt.contains("hello") && srt.contains("你好"))
+        #expect(!srt.contains("helo\n") && !srt.contains("哈喽"))
+        // Timecodes come from the untouched segment range.
+        #expect(srt.contains("00:00:00,000 --> 00:00:01,000"))
+    }
 }

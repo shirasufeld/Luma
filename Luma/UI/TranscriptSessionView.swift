@@ -364,11 +364,11 @@ struct TranscriptSessionView: View {
 
     private func entryRow(_ entry: SubtitleEntry) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(entry.segment.plainText)
+            Text(entry.displayText)
                 .font(.system(size: transcriptFontSize))
             switch entry.translation {
-            case .translated(let translation):
-                Text(translation)
+            case .translated:
+                Text(entry.displayTranslatedText ?? "")
                     .font(.system(size: transcriptFontSize))
                     .foregroundStyle(.tint)
             case .pending:
