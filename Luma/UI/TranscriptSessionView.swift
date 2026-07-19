@@ -353,17 +353,45 @@ struct TranscriptSessionView: View {
         aiAvailability = await capabilities.appleIntelligenceAvailability(for: locale)
     }
 
-    /// Rewrite actions (Summary / Reformat) — results land in a sheet, the
-    /// transcript and its SRT timeline stay untouched.
+    /// Rewrite actions — results land in a sheet, the transcript and its SRT
+    /// timeline stay untouched. Grouped like the system writing tools:
+    /// digest, rewrite styles, structure.
     @ViewBuilder
     private var aiMenu: some View {
         if intelligence != nil, aiAvailability == .available {
             Menu {
-                Button("Summary…", systemImage: "text.append") {
-                    intelligenceOperation = .summary
+                Section {
+                    Button("Summary…", systemImage: "text.append") {
+                        intelligenceOperation = .summary
+                    }
+                    Button("Key Points…", systemImage: "list.star") {
+                        intelligenceOperation = .keyPoints
+                    }
                 }
-                Button("Reformat…", systemImage: "text.justify.leading") {
-                    intelligenceOperation = .reformat
+                Section {
+                    Button("Reformat…", systemImage: "text.justify.leading") {
+                        intelligenceOperation = .reformat
+                    }
+                    Button("Rewrite…", systemImage: "pencil.line") {
+                        intelligenceOperation = .rewrite
+                    }
+                    Button("Friendly…", systemImage: "face.smiling") {
+                        intelligenceOperation = .friendly
+                    }
+                    Button("Professional…", systemImage: "briefcase") {
+                        intelligenceOperation = .professional
+                    }
+                    Button("Concise…", systemImage: "arrow.down.right.and.arrow.up.left") {
+                        intelligenceOperation = .concise
+                    }
+                }
+                Section {
+                    Button("Convert to List…", systemImage: "list.bullet") {
+                        intelligenceOperation = .list
+                    }
+                    Button("Convert to Table…", systemImage: "tablecells") {
+                        intelligenceOperation = .table
+                    }
                 }
             } label: {
                 Label {

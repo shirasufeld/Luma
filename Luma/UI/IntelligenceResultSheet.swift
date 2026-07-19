@@ -4,9 +4,30 @@ import UniformTypeIdentifiers
 /// Which rewrite the Apple Intelligence menu launched.
 nonisolated enum IntelligenceOperation: String, Identifiable, Sendable {
     case summary
+    case keyPoints
     case reformat
+    case rewrite
+    case friendly
+    case professional
+    case concise
+    case list
+    case table
 
     var id: String { rawValue }
+
+    /// The prose pipeline style for map-only operations; nil for the
+    /// map-reduce ones (summary, key points) and the table.
+    var proseStyle: RewriteStyle? {
+        switch self {
+        case .reformat: .reformat
+        case .rewrite: .rewrite
+        case .friendly: .friendly
+        case .professional: .professional
+        case .concise: .concise
+        case .list: .bulletList
+        case .summary, .keyPoints, .table: nil
+        }
+    }
 }
 
 /// Drives one rewrite run over a value snapshot of the transcript. The sheet
@@ -23,6 +44,8 @@ final class IntelligenceSheetModel {
 
     private(set) var phase: Phase = .working(step: 0, total: 0)
     private(set) var summary: TranscriptSummary?
+    private(set) var points: [String] = []
+    private(set) var rows: [TranscriptTableRow] = []
     private(set) var reformatted = ""
 
     let operation: IntelligenceOperation
@@ -50,13 +73,22 @@ final class IntelligenceSheetModel {
         return false
     }
 
-    /// Copy/export payload; "- " bullets read fine as both .txt and .md.
+    /// Copy/export payload; "- " bullets and pipe tables read fine as both
+    /// .txt and .md.
     var resultText: String {
         switch operation {
         case .summary:
             guard let summary else { return "" }
-            return summary.abstract + "\n\n" + summary.keyPoints.map { "- \($0)" }.joined(separator: "\n")
-        case .reformat:
+            return summary.abstract + "\n\n"
+                + summary.keyPoints.map { "- \($0)" }.joined(separator: "\n")
+        case .keyPoints:
+            return points.map { "- \($0)" }.joined(separator: "\n")
+        case .table:
+            let header = String(localized: "Topic", locale: AppLanguage.currentLocale())
+            let detail = String(localized: "Detail", locale: AppLanguage.currentLocale())
+            return "| \(header) | \(detail) |\n| --- | --- |\n"
+                + rows.map { "| \($0.topic) | \($0.detail) |" }.joined(separator: "\n")
+        case .reformat, .rewrite, .friendly, .professional, .concise, .list:
             return reformatted
         }
     }
@@ -75,6 +107,8 @@ final class IntelligenceSheetModel {
         task = nil
         phase = .working(step: 0, total: 0)
         summary = nil
+        points = []
+        rows = []
         reformatted = ""
         start()
     }
@@ -86,61 +120,114 @@ final class IntelligenceSheetModel {
         do {
             switch operation {
             case .summary:
-                var drafts: [TranscriptSummary] = []
-                var skipped = false
-                phase = .working(step: 0, total: chunks.count + 1)
-                for (index, chunk) in chunks.enumerated() {
-                    try Task.checkCancellation()
-                    phase = .working(step: index + 1, total: chunks.count + 1)
-                    do {
-                        drafts.append(
-                            try await intelligence.summarize(
-                                chunk: chunk.sentences.joined(separator: "\n"), locale: locale))
-                    } catch IntelligenceError.guardrailViolation, IntelligenceError.refusal {
-                        skipped = true
-                    }
-                }
-                guard var merged = drafts.first else {
-                    throw IntelligenceError.guardrailViolation
-                }
-                phase = .working(step: chunks.count + 1, total: chunks.count + 1)
-                if drafts.count > 1 {
-                    merged = try await intelligence.combineSummaries(drafts, locale: locale)
-                }
-                if skipped {
-                    merged.keyPoints.append(
-                        String(
-                            localized: "Some sections could not be processed.",
-                            locale: AppLanguage.currentLocale()))
-                }
-                summary = merged
-                phase = .finished
-            case .reformat:
-                phase = .working(step: 0, total: chunks.count)
-                var tail: String?
-                for (index, chunk) in chunks.enumerated() {
-                    try Task.checkCancellation()
-                    phase = .working(step: index + 1, total: chunks.count)
-                    let joined = chunk.sentences.joined(separator: "\n")
-                    var piece: String
-                    do {
-                        piece = try await intelligence.reformat(
-                            chunk: joined, previousTail: tail, locale: locale)
-                    } catch IntelligenceError.guardrailViolation, IntelligenceError.refusal {
-                        // Never drop the user's content: pass the chunk
-                        // through untouched instead.
-                        piece = joined
-                    }
-                    reformatted += (reformatted.isEmpty ? "" : "\n\n") + piece
-                    tail = String(piece.suffix(200))
-                }
-                phase = .finished
+                try await runSummary(chunks: chunks)
+            case .keyPoints:
+                try await runKeyPoints(chunks: chunks)
+            case .table:
+                try await runTable(chunks: chunks)
+            case .reformat, .rewrite, .friendly, .professional, .concise, .list:
+                try await runProse(chunks: chunks, style: operation.proseStyle ?? .reformat)
             }
         } catch is CancellationError {
             // Sheet dismissed; nothing to publish.
         } catch {
             phase = .failed(Self.failureMessage(for: error))
         }
+    }
+
+    private func runSummary(chunks: [IntelligenceChunker.Chunk]) async throws {
+        var drafts: [TranscriptSummary] = []
+        var skipped = false
+        phase = .working(step: 0, total: chunks.count + 1)
+        for (index, chunk) in chunks.enumerated() {
+            try Task.checkCancellation()
+            phase = .working(step: index + 1, total: chunks.count + 1)
+            do {
+                drafts.append(
+                    try await intelligence.summarize(
+                        chunk: chunk.sentences.joined(separator: "\n"), locale: locale))
+            } catch IntelligenceError.guardrailViolation, IntelligenceError.refusal {
+                skipped = true
+            }
+        }
+        guard var merged = drafts.first else {
+            throw IntelligenceError.guardrailViolation
+        }
+        phase = .working(step: chunks.count + 1, total: chunks.count + 1)
+        if drafts.count > 1 {
+            merged = try await intelligence.combineSummaries(drafts, locale: locale)
+        }
+        if skipped {
+            merged.keyPoints.append(
+                String(
+                    localized: "Some sections could not be processed.",
+                    locale: AppLanguage.currentLocale()))
+        }
+        summary = merged
+        phase = .finished
+    }
+
+    private func runKeyPoints(chunks: [IntelligenceChunker.Chunk]) async throws {
+        var drafts: [[String]] = []
+        phase = .working(step: 0, total: chunks.count + 1)
+        for (index, chunk) in chunks.enumerated() {
+            try Task.checkCancellation()
+            phase = .working(step: index + 1, total: chunks.count + 1)
+            do {
+                drafts.append(
+                    try await intelligence.keyPoints(
+                        chunk: chunk.sentences.joined(separator: "\n"), locale: locale))
+            } catch IntelligenceError.guardrailViolation, IntelligenceError.refusal {
+                continue
+            }
+        }
+        guard !drafts.isEmpty else { throw IntelligenceError.guardrailViolation }
+        phase = .working(step: chunks.count + 1, total: chunks.count + 1)
+        points =
+            drafts.count == 1
+            ? drafts[0]
+            : try await intelligence.combineKeyPoints(drafts, locale: locale)
+        phase = .finished
+    }
+
+    private func runTable(chunks: [IntelligenceChunker.Chunk]) async throws {
+        phase = .working(step: 0, total: chunks.count)
+        for (index, chunk) in chunks.enumerated() {
+            try Task.checkCancellation()
+            phase = .working(step: index + 1, total: chunks.count)
+            do {
+                rows.append(
+                    contentsOf: try await intelligence.tableRows(
+                        chunk: chunk.sentences.joined(separator: "\n"), locale: locale))
+            } catch IntelligenceError.guardrailViolation, IntelligenceError.refusal {
+                continue
+            }
+        }
+        guard !rows.isEmpty else { throw IntelligenceError.guardrailViolation }
+        phase = .finished
+    }
+
+    private func runProse(chunks: [IntelligenceChunker.Chunk], style: RewriteStyle) async throws {
+        phase = .working(step: 0, total: chunks.count)
+        var tail: String?
+        let separator = style == .bulletList ? "\n" : "\n\n"
+        for (index, chunk) in chunks.enumerated() {
+            try Task.checkCancellation()
+            phase = .working(step: index + 1, total: chunks.count)
+            let joined = chunk.sentences.joined(separator: "\n")
+            var piece: String
+            do {
+                piece = try await intelligence.rewrite(
+                    chunk: joined, previousTail: tail, locale: locale, style: style)
+            } catch IntelligenceError.guardrailViolation, IntelligenceError.refusal {
+                // Never drop the user's content: pass the chunk through
+                // untouched instead.
+                piece = joined
+            }
+            reformatted += (reformatted.isEmpty ? "" : separator) + piece
+            tail = style == .bulletList ? nil : String(piece.suffix(200))
+        }
+        phase = .finished
     }
 
     private static func failureMessage(for error: any Error) -> String {
@@ -257,10 +344,10 @@ struct IntelligenceResultSheet: View {
         }
     }
 
-    /// Reformat streams chunk-by-chunk; show what's already done.
+    /// Prose operations stream chunk-by-chunk; show what's already done.
     @ViewBuilder
     private var partialResult: some View {
-        if model.operation == .reformat, !model.reformatted.isEmpty {
+        if model.operation.proseStyle != nil, !model.reformatted.isEmpty {
             ScrollView {
                 Text(model.reformatted)
                     .textSelection(.enabled)
@@ -277,37 +364,64 @@ struct IntelligenceResultSheet: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(summary.abstract)
                         .textSelection(.enabled)
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(Array(summary.keyPoints.enumerated()), id: \.offset) { _, point in
-                            Label {
-                                Text(point).textSelection(.enabled)
-                            } icon: {
-                                Image(systemName: "circle.fill")
-                                    .font(.system(size: 5))
-                                    .foregroundStyle(.tint)
-                            }
-                        }
-                    }
+                    bulletList(summary.keyPoints)
                 }
             }
-        case .reformat:
+        case .keyPoints:
+            bulletList(model.points)
+        case .table:
+            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
+                ForEach(Array(model.rows.enumerated()), id: \.offset) { _, row in
+                    GridRow(alignment: .firstTextBaseline) {
+                        Text(row.topic)
+                            .bold()
+                            .textSelection(.enabled)
+                        Text(row.detail)
+                            .textSelection(.enabled)
+                    }
+                    Divider()
+                        .gridCellColumns(2)
+                }
+            }
+        case .reformat, .rewrite, .friendly, .professional, .concise, .list:
             Text(model.reformatted)
                 .textSelection(.enabled)
+        }
+    }
+
+    private func bulletList(_ points: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(points.enumerated()), id: \.offset) { _, point in
+                Label {
+                    Text(point).textSelection(.enabled)
+                } icon: {
+                    Image(systemName: "circle.fill")
+                        .font(.system(size: 5))
+                        .foregroundStyle(.tint)
+                }
+            }
         }
     }
 
     private var title: LocalizedStringKey {
         switch model.operation {
         case .summary: "Summary"
+        case .keyPoints: "Key Points"
         case .reformat: "Reformatted Transcript"
+        case .rewrite: "Rewritten Transcript"
+        case .friendly: "Friendly Rewrite"
+        case .professional: "Professional Rewrite"
+        case .concise: "Concise Rewrite"
+        case .list: "Transcript List"
+        case .table: "Transcript Table"
         }
     }
 
     private var defaultFilename: String {
         switch model.operation {
-        case .summary:
+        case .summary, .keyPoints:
             String(localized: "Luma Summary", locale: AppLanguage.currentLocale())
-        case .reformat:
+        case .reformat, .rewrite, .friendly, .professional, .concise, .list, .table:
             String(localized: "Luma Transcript", locale: AppLanguage.currentLocale())
         }
     }

@@ -13,6 +13,27 @@ nonisolated struct TranscriptSummary: Sendable, Equatable {
     var keyPoints: [String]
 }
 
+/// One row of the convert-to-table operation.
+nonisolated struct TranscriptTableRow: Sendable, Equatable {
+    var topic: String
+    var detail: String
+}
+
+/// Prose-transformation styles of the rewrite pipeline. All run chunk-by-
+/// chunk in order; prose styles carry the previous chunk's tail for
+/// continuity.
+nonisolated enum RewriteStyle: String, Sendable, Equatable {
+    /// Readable prose, strictly faithful (the original 重新排版).
+    case reformat
+    /// Clearer wording; may reorganize for flow.
+    case rewrite
+    case friendly
+    case professional
+    case concise
+    /// Full-coverage markdown bullet items.
+    case bulletList
+}
+
 /// Domain-level failures of the on-device model; implementations map the
 /// OS error types here so nothing above Infrastructure imports
 /// FoundationModels.
@@ -61,8 +82,19 @@ nonisolated protocol IntelligenceProviding: Sendable {
         _ parts: [TranscriptSummary], locale: Locale
     ) async throws -> TranscriptSummary
 
-    /// Rewrite one chunk of caption fragments as readable prose;
-    /// `previousTail` is the end of the previous chunk's output, for
-    /// continuity.
-    func reformat(chunk: String, previousTail: String?, locale: Locale) async throws -> String
+    /// Map step: the most important points of one chunk.
+    func keyPoints(chunk: String, locale: Locale) async throws -> [String]
+
+    /// Reduce step: merge per-chunk point lists, deduplicated.
+    func combineKeyPoints(_ parts: [[String]], locale: Locale) async throws -> [String]
+
+    /// Topic/detail rows for the convert-to-table operation (map-only;
+    /// callers concatenate rows across chunks).
+    func tableRows(chunk: String, locale: Locale) async throws -> [TranscriptTableRow]
+
+    /// Rewrites one chunk in the given style; `previousTail` is the end of
+    /// the previous chunk's output, for continuity in prose styles.
+    func rewrite(
+        chunk: String, previousTail: String?, locale: Locale, style: RewriteStyle
+    ) async throws -> String
 }

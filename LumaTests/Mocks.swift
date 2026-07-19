@@ -253,8 +253,22 @@ actor MockIntelligence: IntelligenceProviding {
             keyPoints: parts.flatMap(\.keyPoints))
     }
 
-    func reformat(chunk: String, previousTail: String?, locale: Locale) async throws -> String {
-        "reformatted(\(chunk.prefix(8)))"
+    func keyPoints(chunk: String, locale: Locale) async throws -> [String] {
+        ["point(\(chunk.prefix(8)))"]
+    }
+
+    func combineKeyPoints(_ parts: [[String]], locale: Locale) async throws -> [String] {
+        parts.flatMap { $0 }
+    }
+
+    func tableRows(chunk: String, locale: Locale) async throws -> [TranscriptTableRow] {
+        [TranscriptTableRow(topic: "topic(\(chunk.prefix(8)))", detail: "detail")]
+    }
+
+    func rewrite(
+        chunk: String, previousTail: String?, locale: Locale, style: RewriteStyle
+    ) async throws -> String {
+        "\(style.rawValue)(\(chunk.prefix(8)))"
     }
 }
 

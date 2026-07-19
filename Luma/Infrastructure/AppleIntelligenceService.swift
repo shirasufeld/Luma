@@ -49,6 +49,26 @@ private struct SummaryDraft {
     var keyPoints: [String]
 }
 
+@Generable
+private struct KeyPointsDraft {
+    @Guide(description: "3 to 7 short key points, in the passage's language, original order.")
+    var points: [String]
+}
+
+@Generable
+private struct TableRowsDraft {
+    @Guide(description: "One row per distinct topic of the passage, in the original order.")
+    var rows: [TableRowDraft]
+}
+
+@Generable
+private struct TableRowDraft {
+    @Guide(description: "A short topic name, in the passage's language.")
+    var topic: String
+    @Guide(description: "A one-sentence detail for the topic, in the passage's language.")
+    var detail: String
+}
+
 /// FoundationModels-backed engine for smart proofread and rewrite — with
 /// `CapabilityService`, the only production code that talks to the on-device
 /// language model. Stateless: a fresh short-lived session per request keeps
@@ -140,10 +160,57 @@ nonisolated final class AppleIntelligenceService: IntelligenceProviding {
     }
 
     @concurrent
-    func reformat(chunk: String, previousTail: String?, locale: Locale) async throws -> String {
+    func keyPoints(chunk: String, locale: Locale) async throws -> [String] {
         do {
             let session = try Self.makeSession(
-                instructions: IntelligencePrompts.reformatInstructions())
+                instructions: IntelligencePrompts.keyPointsInstructions())
+            let response = try await session.respond(
+                to: chunk, generating: KeyPointsDraft.self,
+                options: GenerationOptions(maximumResponseTokens: 400))
+            return response.content.points
+        } catch {
+            throw Self.mapped(error)
+        }
+    }
+
+    @concurrent
+    func combineKeyPoints(_ parts: [[String]], locale: Locale) async throws -> [String] {
+        do {
+            let session = try Self.makeSession(
+                instructions: IntelligencePrompts.combineKeyPointsInstructions())
+            let response = try await session.respond(
+                to: IntelligencePrompts.keyPointsCombinePrompt(parts: parts),
+                generating: KeyPointsDraft.self,
+                options: GenerationOptions(maximumResponseTokens: 400))
+            return response.content.points
+        } catch {
+            throw Self.mapped(error)
+        }
+    }
+
+    @concurrent
+    func tableRows(chunk: String, locale: Locale) async throws -> [TranscriptTableRow] {
+        do {
+            let session = try Self.makeSession(
+                instructions: IntelligencePrompts.tableInstructions())
+            let response = try await session.respond(
+                to: chunk, generating: TableRowsDraft.self,
+                options: GenerationOptions(maximumResponseTokens: 800))
+            return response.content.rows.map {
+                TranscriptTableRow(topic: $0.topic, detail: $0.detail)
+            }
+        } catch {
+            throw Self.mapped(error)
+        }
+    }
+
+    @concurrent
+    func rewrite(
+        chunk: String, previousTail: String?, locale: Locale, style: RewriteStyle
+    ) async throws -> String {
+        do {
+            let session = try Self.makeSession(
+                instructions: IntelligencePrompts.rewriteInstructions(style: style))
             let response = try await session.respond(
                 to: IntelligencePrompts.reformatPrompt(chunk: chunk, previousTail: previousTail),
                 options: GenerationOptions(maximumResponseTokens: 1800))
