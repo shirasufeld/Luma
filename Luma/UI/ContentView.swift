@@ -76,6 +76,8 @@ struct ContentView: View {
             overlay: dependencies.overlay,
             exporter: dependencies.exporter,
             capabilities: dependencies.capabilities,
+            proofreader: dependencies.proofreader,
+            intelligence: dependencies.intelligence,
             broadcastMonitor: dependencies.broadcastMonitor)
         #else
         TranscriptSessionView(
@@ -83,7 +85,9 @@ struct ContentView: View {
             session: dependencies.session,
             overlay: dependencies.overlay,
             exporter: dependencies.exporter,
-            capabilities: dependencies.capabilities)
+            capabilities: dependencies.capabilities,
+            proofreader: dependencies.proofreader,
+            intelligence: dependencies.intelligence)
         #endif
     }
 }
