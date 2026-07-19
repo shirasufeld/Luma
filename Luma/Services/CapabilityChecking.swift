@@ -29,4 +29,7 @@ nonisolated protocol CapabilityChecking: Sendable {
 
     /// Languages the translation engine supports on this device.
     func supportedTranslationLanguages() async -> [Locale.Language]
+
+    /// On-device Apple Intelligence availability for a locale.
+    func appleIntelligenceAvailability(for locale: Locale) async -> AppleIntelligenceAvailability
 }

@@ -31,8 +31,8 @@ nonisolated enum SRTFormatter {
 
     static func textDocument(entries: [SubtitleEntry], includeTranslations: Bool = true) -> String {
         entries.map { entry in
-            var lines = [entry.segment.plainText]
-            if includeTranslations, case .translated(let translation) = entry.translation {
+            var lines = [entry.displayText]
+            if includeTranslations, let translation = entry.displayTranslatedText {
                 lines.append(translation)
             }
             return lines.joined(separator: "\n")
@@ -51,9 +51,9 @@ nonisolated enum SRTFormatter {
             var lines = [
                 "\(index + 1)",
                 "\(timecode(start)) --> \(timecode(end))",
-                entry.segment.plainText,
+                entry.displayText,
             ]
-            if includeTranslations, case .translated(let translation) = entry.translation {
+            if includeTranslations, let translation = entry.displayTranslatedText {
                 lines.append(translation)
             }
             return lines.joined(separator: "\n")

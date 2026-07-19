@@ -92,15 +92,13 @@ final class CaptionPiPController: NSObject {
         if let volatile = store.volatileText {
             original = String(volatile.characters)
         } else {
-            original = store.entries.last?.segment.plainText ?? ""
+            original = store.entries.last?.displayText ?? ""
         }
         let translation: String
         if store.volatileText != nil, let volatileTranslation = store.volatileTranslation {
             translation = volatileTranslation
-        } else if case .translated(let finalized) = store.entries.last?.translation {
-            translation = finalized
         } else {
-            translation = ""
+            translation = store.entries.last?.displayTranslatedText ?? ""
         }
         return (original, translation)
     }

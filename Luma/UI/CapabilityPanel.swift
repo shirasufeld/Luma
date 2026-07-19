@@ -63,6 +63,10 @@ struct CapabilityPanel: View {
                 } else {
                     row("Translation", status: ("Off", .secondary))
                 }
+                row(
+                    "Apple Intelligence",
+                    status: appleIntelligenceLabel(snapshot.appleIntelligence)
+                )
             }
             Section {
                 // Statuses can change outside the app (System Settings, model
@@ -124,6 +128,8 @@ struct CapabilityPanel: View {
             next.translation = await capabilities.translationAvailability(
                 from: languagePair.translationSource, to: target)
         }
+        next.appleIntelligence = await capabilities.appleIntelligenceAvailability(
+            for: languagePair.transcriptionLocale)
         snapshot = next
     }
 
@@ -168,6 +174,18 @@ struct CapabilityPanel: View {
         case .installed: ("Installed", .green)
         case .supported: ("Download required", .orange)
         case .unsupported: ("Pair unsupported", .red)
+        }
+    }
+
+    private func appleIntelligenceLabel(
+        _ state: AppleIntelligenceAvailability
+    ) -> (LocalizedStringKey, Color) {
+        switch state {
+        case .available: ("Ready", .green)
+        case .notEnabled: ("Enable Apple Intelligence in System Settings", .orange)
+        case .modelNotReady: ("Model downloading…", .orange)
+        case .unsupportedLanguage: ("Language not supported", .orange)
+        case .deviceNotEligible: ("Not supported on this device", .red)
         }
     }
 }

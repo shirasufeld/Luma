@@ -32,6 +32,14 @@ final class SessionStore {
     /// is being captured. The visible proof that audio is arriving at all.
     private(set) var audioLevel: Float?
 
+    // Smart proofread.
+    private(set) var proofreadActivity: ProofreadActivity = .idle
+    /// Entries corrected moments ago; drives the brief row highlight.
+    private(set) var recentlyCorrectedIDs: Set<UUID> = []
+    /// Status-bar note for proofread hiccups — deliberately separate from
+    /// `errorMessage`, which means "the session failed".
+    private(set) var proofreadMessage: String?
+
     // User configuration — persisted so the app relaunches the way it was
     // last used (these are now primary main-screen controls).
     var languagePair: LanguagePair = .default {
@@ -154,6 +162,82 @@ final class SessionStore {
         buffer.applyTranslation(segmentID: segmentID, state: state)
     }
 
+    // MARK: - Smart proofread
+
+    var proofreadBoundaryID: UUID? { buffer.proofreadBoundaryID }
+    var canRevertProofread: Bool { buffer.lastProofreadBatch != nil }
+    var proofreadEligibleCount: Int { buffer.entriesAfterBoundary.count }
+
+    /// Atomic snapshot + batch start: eligibility, the entry just before the
+    /// scope (for cross-boundary punctuation hand-off and model context), and
+    /// the divider move all happen in one main-actor turn. Returns nil while
+    /// a run is active or nothing is eligible.
+    func beginProofread() -> (entries: [SubtitleEntry], previous: SubtitleEntry?, batch: ProofreadBatch)? {
+        guard proofreadActivity == .idle else { return nil }
+        let eligible = buffer.entriesAfterBoundary
+        guard let last = eligible.last else { return nil }
+        var previous: SubtitleEntry?
+        if let firstID = eligible.first?.id,
+            let firstIndex = buffer.entries.firstIndex(where: { $0.id == firstID }),
+            firstIndex > 0
+        {
+            previous = buffer.entries[firstIndex - 1]
+        }
+        let batch = ProofreadBatch(
+            id: UUID(),
+            previousBoundaryID: buffer.proofreadBoundaryID,
+            boundaryID: last.id)
+        buffer.beginProofreadBatch(batch)
+        proofreadMessage = nil
+        proofreadActivity = .running(batchID: batch.id, chunksDone: 0, chunksTotal: 0)
+        return (eligible, previous, batch)
+    }
+
+    func proofreadChunksPlanned(_ total: Int, batchID: UUID) {
+        guard case .running(let id, let done, _) = proofreadActivity, id == batchID else { return }
+        proofreadActivity = .running(batchID: id, chunksDone: done, chunksTotal: total)
+    }
+
+    func proofreadChunkFinished(batchID: UUID) {
+        guard case .running(let id, let done, let total) = proofreadActivity, id == batchID
+        else { return }
+        proofreadActivity = .running(batchID: id, chunksDone: done + 1, chunksTotal: total)
+    }
+
+    func applyProofreadCorrections(_ updates: [ProofreadCorrectionUpdate], batchID: UUID) {
+        buffer.applyProofread(updates, batchID: batchID)
+        let corrected = Set(updates.map(\.segmentID))
+        guard !corrected.isEmpty else { return }
+        recentlyCorrectedIDs.formUnion(corrected)
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(2.5))
+            self?.recentlyCorrectedIDs.subtract(corrected)
+        }
+    }
+
+    func finishProofread(batchID: UUID, outcome: ProofreadOutcome) {
+        switch outcome {
+        case .completed:
+            break
+        case .cancelled(let rollbackID, let appliedAny):
+            if appliedAny {
+                buffer.rollbackProofreadBoundary(to: rollbackID, batchID: batchID)
+            } else {
+                buffer.abandonProofreadBatch(batchID)
+            }
+        case .failed(let message):
+            buffer.abandonProofreadBatch(batchID)
+            proofreadMessage = message
+        }
+        if case .running(let id, _, _) = proofreadActivity, id == batchID {
+            proofreadActivity = .idle
+        }
+    }
+
+    func revertLastProofread() {
+        buffer.revertLastProofread()
+    }
+
     func sessionFailed(_ message: String) {
         errorMessage = message
         sessionState = .idle
@@ -164,5 +248,8 @@ final class SessionStore {
         buffer.clear()
         volatileTranslation = nil
         latency = nil
+        proofreadActivity = .idle
+        recentlyCorrectedIDs = []
+        proofreadMessage = nil
     }
 }

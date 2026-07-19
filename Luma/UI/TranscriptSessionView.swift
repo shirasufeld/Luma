@@ -10,11 +10,26 @@ struct TranscriptSessionView: View {
     var exporter: (any TranscriptExporting)?
     /// Enables the main-screen language-pair/mode menu when provided.
     var capabilities: (any CapabilityChecking)?
+    /// Enables the ✦ Smart Proofread control when provided.
+    var proofreader: ProofreadCoordinator?
+    /// Enables the Apple Intelligence rewrite menu when provided.
+    var intelligence: (any IntelligenceProviding)?
     #if os(iOS)
     var broadcastMonitor: BroadcastStateMonitor?
     #endif
 
     @State private var exportError: String?
+    /// Refreshed on locale change and app activation (CapabilityPanel idiom).
+    @State private var aiAvailability: AppleIntelligenceAvailability?
+    /// Non-nil while the Summary/Reformat sheet is up.
+    @State private var intelligenceOperation: IntelligenceOperation?
+
+    @Environment(\.scenePhase) private var scenePhase
+
+    @AppStorage(IntelligenceSettingsKey.proofreadTranscription)
+    private var proofreadTranscription = true
+    @AppStorage(IntelligenceSettingsKey.proofreadTranslation)
+    private var proofreadTranslation = true
 
     @AppStorage(AppearanceSettingsKey.transcriptFontSize)
     private var transcriptFontSize: Double = AppearanceSettingsKey.defaultTranscriptFontSize
@@ -41,6 +56,8 @@ struct TranscriptSessionView: View {
                 inputPicker
                 controlButtons
                 overlayToggle
+                proofreadControl
+                aiMenu
                 exportMenu
                 // macOS opens the dedicated Settings scene; iOS presents
                 // settings as a sheet from ContentView's navigation bar.
@@ -60,6 +77,25 @@ struct TranscriptSessionView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(exportError ?? "")
+        }
+        .task(id: store.languagePair.transcriptionLocale) {
+            await refreshAIAvailability()
+        }
+        .onChange(of: scenePhase) {
+            // Apple Intelligence may have been enabled in System Settings.
+            if scenePhase == .active {
+                Task { await refreshAIAvailability() }
+            }
+        }
+        .sheet(item: $intelligenceOperation) { operation in
+            if let intelligence {
+                IntelligenceResultSheet(
+                    operation: operation,
+                    entries: store.entries,
+                    locale: store.resolvedTranscriptionLocale
+                        ?? store.languagePair.transcriptionLocale,
+                    intelligence: intelligence)
+            }
         }
         #if os(iOS)
         // The caption PiP window is started up front for system-audio
@@ -92,11 +128,15 @@ struct TranscriptSessionView: View {
             HStack(spacing: 16) {
                 controlButtons
                     .labelStyle(.iconOnly)
+                proofreadControl
+                    .labelStyle(.iconOnly)
                 Spacer()
                 // Labeled so the caption Picture in Picture control is
                 // self-explanatory rather than a bare icon switch.
                 overlayToggle
                     .toggleStyle(.button)
+                aiMenu
+                    .labelStyle(.iconOnly)
                 exportMenu
                     .labelStyle(.iconOnly)
             }
@@ -265,6 +305,109 @@ struct TranscriptSessionView: View {
         }
     }
 
+    // MARK: - Smart proofread
+
+    /// ✦ Smart Proofread: the primary tap runs a batch over everything after
+    /// the divider; revert lives one gesture away in the menu. Hidden when
+    /// Apple Intelligence can't serve the transcript language or both axes
+    /// are off in Settings; a spinner replaces it while a batch runs.
+    @ViewBuilder
+    private var proofreadControl: some View {
+        if let proofreader, aiAvailability == .available,
+            proofreadTranscription || proofreadTranslation
+        {
+            if store.proofreadActivity != .idle {
+                ProgressView()
+                    .controlSize(.small)
+            } else {
+                Menu {
+                    Button("Revert Last Proofread", systemImage: "arrow.uturn.backward") {
+                        Task { await proofreader.revertLast() }
+                    }
+                    .disabled(!store.canRevertProofread)
+                } label: {
+                    Label("Smart Proofread", systemImage: "sparkles")
+                } primaryAction: {
+                    startProofread(with: proofreader)
+                }
+                .menuIndicator(.hidden)
+                .disabled(store.proofreadEligibleCount == 0)
+                .help("Proofread the transcript with Apple Intelligence")
+            }
+        }
+    }
+
+    private func startProofread(with proofreader: ProofreadCoordinator) {
+        let options = ProofreadOptions(
+            transcription: proofreadTranscription, translation: proofreadTranslation)
+        let locale = store.resolvedTranscriptionLocale ?? store.languagePair.transcriptionLocale
+        let target = store.languagePair.translationTarget
+        Task {
+            await proofreader.startProofread(options: options, locale: locale, target: target)
+        }
+    }
+
+    private func refreshAIAvailability() async {
+        guard let capabilities else { return }
+        let locale = store.resolvedTranscriptionLocale ?? store.languagePair.transcriptionLocale
+        aiAvailability = await capabilities.appleIntelligenceAvailability(for: locale)
+    }
+
+    /// Rewrite actions — results land in a sheet, the transcript and its SRT
+    /// timeline stay untouched. Grouped like the system writing tools:
+    /// digest, rewrite styles, structure.
+    @ViewBuilder
+    private var aiMenu: some View {
+        if intelligence != nil, aiAvailability == .available {
+            Menu {
+                Section {
+                    Button("Summary…", systemImage: "text.append") {
+                        intelligenceOperation = .summary
+                    }
+                    Button("Key Points…", systemImage: "list.star") {
+                        intelligenceOperation = .keyPoints
+                    }
+                }
+                Section {
+                    Button("Reformat…", systemImage: "text.justify.leading") {
+                        intelligenceOperation = .reformat
+                    }
+                    Button("Rewrite…", systemImage: "pencil.line") {
+                        intelligenceOperation = .rewrite
+                    }
+                    Button("Friendly…", systemImage: "face.smiling") {
+                        intelligenceOperation = .friendly
+                    }
+                    Button("Professional…", systemImage: "briefcase") {
+                        intelligenceOperation = .professional
+                    }
+                    Button("Concise…", systemImage: "arrow.down.right.and.arrow.up.left") {
+                        intelligenceOperation = .concise
+                    }
+                }
+                Section {
+                    Button("Convert to List…", systemImage: "list.bullet") {
+                        intelligenceOperation = .list
+                    }
+                    Button("Convert to Table…", systemImage: "tablecells") {
+                        intelligenceOperation = .table
+                    }
+                }
+            } label: {
+                Label {
+                    // Brand name; never localized.
+                    Text(verbatim: "Apple Intelligence")
+                } icon: {
+                    Image(systemName: "apple.intelligence")
+                }
+            }
+            .menuIndicator(.hidden)
+            // Match the neutral monochrome of the other toolbar buttons.
+            .tint(.primary)
+            .disabled(store.entries.isEmpty)
+        }
+    }
+
     private var stopButton: some View {
         Button("Stop", systemImage: "stop.circle") {
             Task { await session.stop() }
@@ -329,6 +472,9 @@ struct TranscriptSessionView: View {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     ForEach(store.entries) { entry in
                         entryRow(entry)
+                        if entry.id == store.proofreadBoundaryID {
+                            ProofreadBoundaryDivider()
+                        }
                     }
                     if let volatileText = store.volatileText {
                         VStack(alignment: .leading, spacing: 2) {
@@ -359,18 +505,21 @@ struct TranscriptSessionView: View {
                     proxy.scrollTo("volatile", anchor: .bottom)
                 }
             }
+            .aiProcessingGlow(store.proofreadActivity != .idle)
         }
     }
 
     private func entryRow(_ entry: SubtitleEntry) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(entry.segment.plainText)
+            Text(entry.displayText)
                 .font(.system(size: transcriptFontSize))
+                .contentTransition(.opacity)
             switch entry.translation {
-            case .translated(let translation):
-                Text(translation)
+            case .translated:
+                Text(entry.displayTranslatedText ?? "")
                     .font(.system(size: transcriptFontSize))
                     .foregroundStyle(.tint)
+                    .contentTransition(.opacity)
             case .pending:
                 Text("Translating…")
                     .font(.caption)
@@ -384,6 +533,18 @@ struct TranscriptSessionView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            // Brief flash on rows the last chunk corrected.
+            if store.recentlyCorrectedIDs.contains(entry.id) {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(.tint.opacity(0.12))
+                    .padding(.horizontal, -6)
+                    .padding(.vertical, -3)
+            }
+        }
+        .animation(.easeInOut(duration: 0.35), value: entry.displayText)
+        .animation(.easeInOut(duration: 0.35), value: entry.displayTranslatedText)
+        .animation(.easeOut(duration: 0.6), value: store.recentlyCorrectedIDs.contains(entry.id))
         .id(entry.id)
     }
 
@@ -419,6 +580,13 @@ struct TranscriptSessionView: View {
                     .foregroundStyle(.red)
                     .lineLimit(2)
                     .truncationMode(.middle)
+                    .help(message)
+            }
+            if let message = store.proofreadMessage {
+                // Proofread hiccups are informational, never session-fatal.
+                Label(message, systemImage: "sparkles")
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
                     .help(message)
             }
             // The language pair moved into the interactive main-screen menu;
