@@ -6,8 +6,8 @@ ASC App 记录,各自 archive 与上传。签名身份(team、bundle id)在 giti
 `LUMA_BUNDLE_ID_APP`,扩展 id 恒为 `<APP_ID>.BroadcastExtension`(硬约束,见
 `BuildConfig/Local.xcconfig.example`)。
 
-- **Version**: 0.9.1
-- **Build**: 7(每次上传递增 `CURRENT_PROJECT_VERSION`,app 与扩展同步,不可复用)
+- **Version**: 0.9.2
+- **Build**: 8(每次上传递增 `CURRENT_PROJECT_VERSION`,app 与扩展同步,不可复用)
 - **Target**: macOS 26.0+(Apple Silicon)/ iOS 26.0+(iPhone + iPad),arm64
 - **Feedback Email**: <反馈邮箱>
 - **Demo account**: 不需要(应用无登录)
@@ -23,6 +23,33 @@ ASC App 记录,各自 archive 与上传。签名身份(team、bundle id)在 giti
 > On macOS, captions appear in a floating, always-on-top subtitle overlay; on
 > iOS they appear in a Picture in Picture window that keeps updating over other
 > apps and on the lock screen. TXT/SRT export included.
+
+## What to Test — 0.9.2 additions (both platforms)
+
+```
+New in 0.9.2:
+1. Translation presets are now two tiers: Real-time / Accurate (Balanced is
+   gone; a previously selected Balanced silently becomes Accurate). Real-time
+   also translates the line being spoken; Accurate translates each finalized
+   sentence with the best model available (on 26.4+ this is the Apple
+   Intelligence high-fidelity model — expect noticeably better translations,
+   possibly a beat slower)
+2. Transcript scrolling: captions now keep a margin above the window bottom
+   instead of hugging the edge; translations filling in below the last line
+   must keep the view glued to the bottom
+3. Scroll up during a live session: new sentences, translation backfill, and
+   proofread updates must NOT pull the view back down; scroll back to the
+   bottom and auto-follow resumes
+4. Proofread a long transcript (several minutes): corrections should stay
+   consistent across the whole text — a technical term fixed early should be
+   fixed the same way later
+5. Glossary presets: Settings › Apple Intelligence › Glossary & Reference —
+   create a preset with names/terms from your talk (there is a length cap
+   with live feedback), pick it in the Proofread button menu (Glossary
+   section), run a proofread: corrections should prefer your spellings.
+   Switch to None and confirm behavior returns to baseline; Revert Last
+   Proofread still works
+```
 
 ## What to Test — 0.9.1 additions (both platforms)
 
