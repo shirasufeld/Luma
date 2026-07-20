@@ -15,10 +15,13 @@ nonisolated struct ProofreadBatch: Sendable, Equatable {
     let boundaryID: UUID
 }
 
-/// Which proofread axes the user has enabled in Settings.
+/// Which proofread axes the user has enabled in Settings, plus the active
+/// glossary preset's content (injected into instructions; never enables a
+/// run by itself).
 nonisolated struct ProofreadOptions: Sendable, Equatable {
     var transcription: Bool
     var translation: Bool
+    var reference: String? = nil
 
     var isEnabled: Bool { transcription || translation }
 }

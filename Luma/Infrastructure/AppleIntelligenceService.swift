@@ -100,10 +100,11 @@ nonisolated final class AppleIntelligenceService: IntelligenceProviding {
     }
 
     func proofreadTranscription(
-        sentences: [String], context: String?, locale: Locale
+        sentences: [String], context: String?, reference: String?, locale: Locale
     ) async throws -> [Int: String] {
         let raw = try await Self.sentenceCorrections(
-            instructions: IntelligencePrompts.transcriptionInstructions(for: locale),
+            instructions: IntelligencePrompts.transcriptionInstructions(
+                for: locale, reference: reference),
             prompt: IntelligencePrompts.transcriptionPrompt(
                 sentences: sentences, context: context))
         return Self.validatedCorrections(raw, against: sentences)

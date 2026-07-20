@@ -69,6 +69,13 @@ actor ProofreadCoordinator {
 
     // MARK: - Run
 
+    /// The reference rides in the instructions of every chunk request, so its
+    /// cost comes out of each chunk's input budget. Floored at half the base
+    /// budget so even a maximal reference cannot collapse chunk sizes.
+    static func effectiveInputBudget(base: Int, referenceCost: Int) -> Int {
+        max(base / 2, base - referenceCost)
+    }
+
     private func run(
         entries: [SubtitleEntry], previous: SubtitleEntry?, batch: ProofreadBatch,
         options: ProofreadOptions, locale: Locale, target: Locale.Language?
@@ -95,9 +102,11 @@ actor ProofreadCoordinator {
         }
         let contextText = previousSentence.map { normalizationChanges[$0.id] ?? $0.text }
 
+        let referenceCost = options.reference.map(IntelligenceChunker.estimatedTokens) ?? 0
         var remaining = IntelligenceChunker.chunks(
             entries: normalized.map { (id: $0.id, text: $0.text) },
-            budget: inputBudget, initialContext: contextText.map { [$0] } ?? [])
+            budget: Self.effectiveInputBudget(base: inputBudget, referenceCost: referenceCost),
+            initialContext: contextText.map { [$0] } ?? [])
         var totalPlanned = remaining.count
         await store.proofreadChunksPlanned(totalPlanned, batchID: batch.id)
 
@@ -184,7 +193,8 @@ actor ProofreadCoordinator {
         var correctedSource: [Int: String] = [:]
         if options.transcription {
             correctedSource = try await intelligence.proofreadTranscription(
-                sentences: chunk.sentences, context: chunk.contextText, locale: locale)
+                sentences: chunk.sentences, context: chunk.contextText,
+                reference: options.reference, locale: locale)
         }
 
         var correctedTranslations: [Int: String] = [:]

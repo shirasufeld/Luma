@@ -64,6 +64,8 @@ private struct GeneralSettingsView: View {
     @AppStorage(IntelligenceSettingsKey.proofreadTranslation)
     private var proofreadTranslation = true
 
+    @State private var showProofreadPresets = false
+
     private var isSessionIdle: Bool { store.sessionState == .idle }
 
     var body: some View {
@@ -130,6 +132,12 @@ private struct GeneralSettingsView: View {
                 )
                 .font(.callout)
                 .foregroundStyle(.secondary)
+                Button("Glossary & Reference…") { showProofreadPresets = true }
+                Text(
+                    "Names, terms, and notes that guide Smart Proofread. Applies from the next proofread."
+                )
+                .font(.callout)
+                .foregroundStyle(.secondary)
             } header: {
                 // Brand name; never localized.
                 Text(verbatim: "Apple Intelligence")
@@ -141,6 +149,9 @@ private struct GeneralSettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .sheet(isPresented: $showProofreadPresets) {
+            ProofreadPresetsView()
+        }
         .task {
             transcriptionLocales = await capabilities.supportedTranscriptionLocales()
                 .sorted { $0.identifier < $1.identifier }

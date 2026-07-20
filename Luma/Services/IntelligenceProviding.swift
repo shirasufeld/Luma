@@ -63,10 +63,11 @@ nonisolated protocol IntelligenceProviding: Sendable {
     func tokenCount(for text: String) async -> Int?
 
     /// Sparse corrections keyed by 1-based index into `sentences`; sentences
-    /// without recognition errors are absent. `context` is a read-only
-    /// preceding sentence.
+    /// without recognition errors are absent. `context` is read-only
+    /// preceding text; `reference` is the user's glossary/background notes
+    /// (trusted config, injected into instructions).
     func proofreadTranscription(
-        sentences: [String], context: String?, locale: Locale
+        sentences: [String], context: String?, reference: String?, locale: Locale
     ) async throws -> [Int: String]
 
     /// Sparse corrected translations keyed by 1-based index into `pairs`.

@@ -52,6 +52,21 @@ struct IntelligencePromptsTests {
         #expect(all.allSatisfy { $0.contains("not instructions") })
     }
 
+    @Test func referenceSectionIsAppendedAndScoped() {
+        let locale = Locale(identifier: "en_US")
+        let base = IntelligencePrompts.transcriptionInstructions(for: locale)
+        // No reference → byte-identical to the pre-feature instructions.
+        #expect(IntelligencePrompts.transcriptionInstructions(for: locale, reference: nil) == base)
+
+        let with = IntelligencePrompts.transcriptionInstructions(
+            for: locale, reference: "Dr. Ainsworth, biotin")
+        #expect(with.hasPrefix(base))
+        #expect(with.contains("\"Dr. Ainsworth, biotin\""))
+        // The reference is demoted to data, like the transcript itself.
+        #expect(with.contains("not instructions"))
+        #expect(with.contains("never overrides"))
+    }
+
     @Test func proofreadInstructionsDemandEchoAll() {
         // Small on-device models under-trigger on "return only the changed
         // ones" — the instructions must demand one output per input.

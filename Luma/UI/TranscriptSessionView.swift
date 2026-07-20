@@ -30,6 +30,10 @@ struct TranscriptSessionView: View {
     private var proofreadTranscription = true
     @AppStorage(IntelligenceSettingsKey.proofreadTranslation)
     private var proofreadTranslation = true
+    @AppStorage(IntelligenceSettingsKey.proofreadPresets)
+    private var proofreadPresetsData = Data()
+    @AppStorage(IntelligenceSettingsKey.activeProofreadPresetID)
+    private var activeProofreadPresetID = ""
 
     @AppStorage(AppearanceSettingsKey.transcriptFontSize)
     private var transcriptFontSize: Double = AppearanceSettingsKey.defaultTranscriptFontSize
@@ -335,6 +339,15 @@ struct TranscriptSessionView: View {
                         Task { await proofreader.revertLast() }
                     }
                     .disabled(!store.canRevertProofread)
+                    if !glossaryPresets.isEmpty {
+                        Picker("Glossary", selection: $activeProofreadPresetID) {
+                            Text("None").tag("")
+                            ForEach(glossaryPresets) { preset in
+                                Text(verbatim: preset.name).tag(preset.id.uuidString)
+                            }
+                        }
+                        .pickerStyle(.inline)
+                    }
                 } label: {
                     Label("Smart Proofread", systemImage: "sparkles")
                 } primaryAction: {
@@ -347,9 +360,17 @@ struct TranscriptSessionView: View {
         }
     }
 
+    /// Presets in the Smart Proofread menu for quick switching; decoded from
+    /// the same defaults key the management sheet writes, so edits show up
+    /// immediately.
+    private var glossaryPresets: [ProofreadPreset] {
+        (try? JSONDecoder().decode([ProofreadPreset].self, from: proofreadPresetsData)) ?? []
+    }
+
     private func startProofread(with proofreader: ProofreadCoordinator) {
-        let options = ProofreadOptions(
-            transcription: proofreadTranscription, translation: proofreadTranslation)
+        // Reads the same toggle keys as the @AppStorage properties above, and
+        // folds in the active glossary preset as the reference.
+        let options = IntelligenceSettings.proofreadOptions()
         let locale = store.resolvedTranscriptionLocale ?? store.languagePair.transcriptionLocale
         let target = store.languagePair.translationTarget
         Task {

@@ -118,6 +118,30 @@ struct ProofreadCoordinatorTests {
         #expect(contexts == [nil, "a1 b2"])
     }
 
+    @Test func effectiveInputBudgetSubtractsReferenceAndFloorsAtHalf() {
+        #expect(ProofreadCoordinator.effectiveInputBudget(base: 900, referenceCost: 0) == 900)
+        #expect(ProofreadCoordinator.effectiveInputBudget(base: 900, referenceCost: 300) == 600)
+        #expect(ProofreadCoordinator.effectiveInputBudget(base: 900, referenceCost: 10_000) == 450)
+    }
+
+    @Test func referenceReachesTheModelAndTightensChunks() async {
+        let (store, _) = seededStore(["a1", "b2"])
+        let mock = MockIntelligence(transcription: [.success([:]), .success([:])])
+        // Two ~7-token sentences fit budget 20 together; the ~8-token
+        // reference shrinks the effective budget so they chunk separately.
+        let coordinator = ProofreadCoordinator(store: store, intelligence: mock, inputBudget: 20)
+
+        await coordinator.startProofread(
+            options: ProofreadOptions(transcription: true, translation: false, reference: "jargon"),
+            locale: english, target: nil)
+
+        #expect(await waitUntil { store.proofreadActivity == .idle })
+        let calls = await mock.transcriptionCalls
+        #expect(calls == [["a1"], ["b2"]])
+        let references = await mock.references
+        #expect(references == ["jargon", "jargon"])
+    }
+
     @Test func allChunksFailedRollsBackBoundaryWithMessage() async {
         let (store, _) = seededStore(["a1", "b2"])
         let mock = MockIntelligence(

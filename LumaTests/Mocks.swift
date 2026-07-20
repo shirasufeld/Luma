@@ -200,6 +200,7 @@ actor MockIntelligence: IntelligenceProviding {
     private let delay: Duration
     private(set) var transcriptionCalls: [[String]] = []
     private(set) var transcriptionContexts: [String?] = []
+    private(set) var references: [String?] = []
     private(set) var translationCalls: [[ProofreadPair]] = []
 
     init(
@@ -225,10 +226,11 @@ actor MockIntelligence: IntelligenceProviding {
     func tokenCount(for text: String) async -> Int? { nil }
 
     func proofreadTranscription(
-        sentences: [String], context: String?, locale: Locale
+        sentences: [String], context: String?, reference: String?, locale: Locale
     ) async throws -> [Int: String] {
         transcriptionCalls.append(sentences)
         transcriptionContexts.append(context)
+        references.append(reference)
         if delay > .zero { try await Task.sleep(for: delay) }
         guard !transcriptionResults.isEmpty else { return [:] }
         return try transcriptionResults.removeFirst().get()
