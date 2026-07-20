@@ -7,7 +7,7 @@ ASC App 记录,各自 archive 与上传。签名身份(team、bundle id)在 giti
 `BuildConfig/Local.xcconfig.example`)。
 
 - **Version**: 0.9.1
-- **Build**: 6(每次上传递增 `CURRENT_PROJECT_VERSION`,app 与扩展同步,不可复用)
+- **Build**: 7(每次上传递增 `CURRENT_PROJECT_VERSION`,app 与扩展同步,不可复用)
 - **Target**: macOS 26.0+(Apple Silicon)/ iOS 26.0+(iPhone + iPad),arm64
 - **Feedback Email**: <反馈邮箱>
 - **Demo account**: 不需要(应用无登录)
@@ -39,7 +39,7 @@ for the transcription language — see Settings › Diagnostics):
    translation proofread) take effect on the next ✦ press
 5. With translation on: translated lines get reviewed against the corrected
    source (pairs whose translation was still pending stay as-is)
-6. Apple Intelligence menu: Summary, Key Points, Reformat, Rewrite, Friendly,
+6. Apple Intelligence menu: Summary, Reformat, Rewrite, Friendly,
    Professional, Concise, Convert to List, Convert to Table — each opens a
    result card with a glow while generating; Copy and export (.txt/.md) work;
    the transcript list and SRT timecodes never change
@@ -51,6 +51,14 @@ for the transcription language — see Settings › Diagnostics):
     disappear — the first batch's corrections must survive intact
 11. (build 6) Traditional Chinese transcription: proofread corrections must
     stay in traditional characters, never drift to simplified
+12. (build 7, iOS) Select System Audio, tap the broadcast/record button
+    BEFORE pressing Start: the badge must show an orange "Broadcasting, but
+    Luma hasn't started" warning, never the green "Capturing" label; press
+    Start afterward and confirm the badge turns green correctly
+13. (build 7) During a multi-chunk proofread, the status bar should show
+    "Proofreading… N/M" with N counting up — not just a bare spinner
+14. (build 7) The Apple Intelligence menu no longer has a separate "Key
+    Points" entry; Summary still includes both an abstract and a bullet list
 ```
 
 ## What to Test — macOS
