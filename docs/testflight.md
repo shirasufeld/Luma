@@ -9,7 +9,7 @@ ASC App 记录,各自 archive 与上传。签名身份(team、bundle id)在 giti
 - **Version**: 0.9.2
 - **Build**: 8(每次上传递增 `CURRENT_PROJECT_VERSION`,app 与扩展同步,不可复用)
 - **Target**: macOS 26.0+(Apple Silicon)/ iOS 26.0+(iPhone + iPad),arm64
-- **Feedback Email**: <反馈邮箱>
+- **Feedback Email**: `<反馈邮箱>`(真实值在 gitignored 的 `docs/private/testflight-contact.md`)
 - **Demo account**: 不需要(应用无登录)
 - **Export Compliance**: 仅使用系统提供的豁免加密;`ITSAppUsesNonExemptEncryption = false`
   已写入 Info.plist,上传后无需再答加密问卷
@@ -169,7 +169,7 @@ When reporting bugs, include:
 
 ## Beta App Review Information(外部测试需要)
 
-- Contact: <姓名> / <反馈邮箱> / <电话>
+- Contact: <姓名> / <反馈邮箱> / <电话>(真实值在 `docs/private/testflight-contact.md`)
 - Review notes 建议写明:
   - macOS 需要 Microphone 与 System Audio Recording 权限;iOS 需要 Microphone 权限,
     其他 app 音频经系统屏幕广播(ReplayKit Broadcast Upload Extension)采集,

@@ -71,7 +71,8 @@ actor SystemAudioTapProvider: AudioInputProviding {
             let outputUID = try defaultOutputDeviceUID()
             let aggregateDescription: [String: Any] = [
                 kAudioAggregateDeviceNameKey: "Luma System Audio Capture",
-                kAudioAggregateDeviceUIDKey: "com.example.Luma.tap.\(UUID().uuidString)",
+                kAudioAggregateDeviceUIDKey:
+                    "\(Bundle.main.bundleIdentifier ?? "Luma").tap.\(UUID().uuidString)",
                 kAudioAggregateDeviceMainSubDeviceKey: outputUID,
                 kAudioAggregateDeviceIsPrivateKey: true,
                 kAudioAggregateDeviceTapAutoStartKey: true,

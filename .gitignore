@@ -27,3 +27,9 @@ BuildConfig/Local.xcconfig
 # Reference project (requirements reference only, not part of this repo)
 reference/
 Logs/
+
+# Private docs (App Store contact info, internal planning) — never committed
+docs/private/
+
+# Claude Code local state
+.claude/

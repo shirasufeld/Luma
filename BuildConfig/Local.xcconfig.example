@@ -13,7 +13,8 @@
 // dot-component) depend on that shape. Anything else makes the two processes
 // derive different App Groups — broadcast audio then silently never arrives.
 
-// DEVELOPMENT_TEAM = YOURTEAMID
+// DEVELOPMENT_TEAM = <YOURTEAMID>
 // LUMA_BUNDLE_ID_APP = com.example.Luma
 // LUMA_BUNDLE_ID_TESTS = com.example.LumaTests
 // LUMA_BUNDLE_ID_EXTENSION = com.example.Luma.BroadcastExtension
+// LUMA_COPYRIGHT = © 2026 Your Name
