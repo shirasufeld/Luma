@@ -23,6 +23,9 @@ struct TranscriptSessionView: View {
     @State private var aiAvailability: AppleIntelligenceAvailability?
     /// Non-nil while the Summary/Reformat sheet is up.
     @State private var intelligenceOperation: IntelligenceOperation?
+    /// Auto-scroll runs only while the user is effectively at the bottom;
+    /// scrolling up pauses it until they return.
+    @State private var isPinnedToBottom = true
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -523,15 +526,34 @@ struct TranscriptSessionView: View {
                 }
                 .padding()
             }
-            .onChange(of: store.entries.count) {
-                if let lastID = store.entries.last?.id {
-                    proxy.scrollTo(lastID, anchor: .bottom)
-                }
+            // Breathing room below the last caption; part of the scrollable
+            // range, so "bottom" sits this far under the text.
+            .contentMargins(.bottom, 72, for: .scrollContent)
+            // In-place growth (translation backfill, proofread corrections,
+            // volatile wrap) changes content size without changing row count;
+            // this keeps the view glued to the bottom through those, but only
+            // while it is effectively at the bottom.
+            .defaultScrollAnchor(.bottom, for: .sizeChanges)
+            .onScrollGeometryChange(for: Bool.self) { geometry in
+                TranscriptScrollMetrics.isNearBottom(
+                    offsetY: geometry.contentOffset.y,
+                    containerHeight: geometry.containerSize.height,
+                    contentHeight: geometry.contentSize.height,
+                    bottomInset: geometry.contentInsets.bottom,
+                    threshold: 56)
+            } action: { _, isNear in
+                isPinnedToBottom = isNear
             }
-            .onChange(of: store.volatileText) {
-                if store.volatileText != nil {
-                    proxy.scrollTo("volatile", anchor: .bottom)
-                }
+            .onChange(of: store.entries.count) {
+                guard isPinnedToBottom, let lastID = store.entries.last?.id else { return }
+                proxy.scrollTo(lastID, anchor: .bottom)
+            }
+            .onChange(of: store.volatileText) { oldValue, newValue in
+                // Only the nil → text transition scrolls; per-refinement
+                // growth is followed by the size-change anchor above, so a
+                // reader who scrolled up is never yanked back down.
+                guard isPinnedToBottom, oldValue == nil, newValue != nil else { return }
+                proxy.scrollTo("volatile", anchor: .bottom)
             }
             .aiProcessingGlow(store.proofreadActivity != .idle)
         }
