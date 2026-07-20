@@ -97,7 +97,7 @@ actor ProofreadCoordinator {
 
         var remaining = IntelligenceChunker.chunks(
             entries: normalized.map { (id: $0.id, text: $0.text) },
-            budget: inputBudget, initialContext: contextText)
+            budget: inputBudget, initialContext: contextText.map { [$0] } ?? [])
         var totalPlanned = remaining.count
         await store.proofreadChunksPlanned(totalPlanned, batchID: batch.id)
 
@@ -184,7 +184,7 @@ actor ProofreadCoordinator {
         var correctedSource: [Int: String] = [:]
         if options.transcription {
             correctedSource = try await intelligence.proofreadTranscription(
-                sentences: chunk.sentences, context: chunk.contextSentence, locale: locale)
+                sentences: chunk.sentences, context: chunk.contextText, locale: locale)
         }
 
         var correctedTranslations: [Int: String] = [:]

@@ -101,6 +101,23 @@ struct ProofreadCoordinatorTests {
         #expect(store.entries.map(\.displayText) == ["A1", "B2"])
     }
 
+    @Test func multiSentenceContextFlowsBetweenChunks() async {
+        let (store, _) = seededStore(["a1", "b2", "c3", "d4"])
+        let mock = MockIntelligence(transcription: [.success([:]), .success([:])])
+        // ~7 estimated tokens per sentence → two sentences per chunk.
+        let coordinator = ProofreadCoordinator(store: store, intelligence: mock, inputBudget: 15)
+
+        await coordinator.startProofread(
+            options: ProofreadOptions(transcription: true, translation: false),
+            locale: english, target: nil)
+
+        #expect(await waitUntil { store.proofreadActivity == .idle })
+        let calls = await mock.transcriptionCalls
+        #expect(calls == [["a1", "b2"], ["c3", "d4"]])
+        let contexts = await mock.transcriptionContexts
+        #expect(contexts == [nil, "a1 b2"])
+    }
+
     @Test func allChunksFailedRollsBackBoundaryWithMessage() async {
         let (store, _) = seededStore(["a1", "b2"])
         let mock = MockIntelligence(

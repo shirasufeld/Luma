@@ -199,6 +199,7 @@ actor MockIntelligence: IntelligenceProviding {
     private var translationResults: [Result<[Int: String], IntelligenceError>]
     private let delay: Duration
     private(set) var transcriptionCalls: [[String]] = []
+    private(set) var transcriptionContexts: [String?] = []
     private(set) var translationCalls: [[ProofreadPair]] = []
 
     init(
@@ -227,6 +228,7 @@ actor MockIntelligence: IntelligenceProviding {
         sentences: [String], context: String?, locale: Locale
     ) async throws -> [Int: String] {
         transcriptionCalls.append(sentences)
+        transcriptionContexts.append(context)
         if delay > .zero { try await Task.sleep(for: delay) }
         guard !transcriptionResults.isEmpty else { return [:] }
         return try transcriptionResults.removeFirst().get()

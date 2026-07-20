@@ -111,7 +111,7 @@ final class IntelligenceSheetModel {
     private func run() async {
         let chunks = IntelligenceChunker.chunks(
             entries: texts.map { (id: UUID(), text: $0) },
-            budget: 2600, initialContext: nil)
+            budget: 2600, initialContext: [])
         do {
             switch operation {
             case .summary:
