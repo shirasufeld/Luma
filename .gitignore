@@ -31,5 +31,8 @@ Logs/
 # Private docs (App Store contact info, internal planning) — never committed
 docs/private/
 
+# App Store submission materials and copy drafts — never committed
+.app-store-preparation/
+
 # Claude Code local state
 .claude/
