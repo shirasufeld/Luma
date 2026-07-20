@@ -6,8 +6,8 @@ ASC App 记录,各自 archive 与上传。签名身份(team、bundle id)在 giti
 `LUMA_BUNDLE_ID_APP`,扩展 id 恒为 `<APP_ID>.BroadcastExtension`(硬约束,见
 `BuildConfig/Local.xcconfig.example`)。
 
-- **Version**: 0.9.0
-- **Build**: 1(每次上传递增 `CURRENT_PROJECT_VERSION`,app 与扩展同步,不可复用)
+- **Version**: 0.9.1
+- **Build**: 6(每次上传递增 `CURRENT_PROJECT_VERSION`,app 与扩展同步,不可复用)
 - **Target**: macOS 26.0+(Apple Silicon)/ iOS 26.0+(iPhone + iPad),arm64
 - **Feedback Email**: <反馈邮箱>
 - **Demo account**: 不需要(应用无登录)
@@ -46,6 +46,11 @@ for the transcription language — see Settings › Diagnostics):
 7. Exports (TXT/SRT) contain the corrected text after proofreading
 8. In-app language override applies to the result card and all new UI
 9. Reduce Motion: the glow becomes a static border, no sweep animation
+10. (build 6) Press ✦ twice in the same session (two separate batches), then
+    Revert Last Proofread: only the second batch's corrections should
+    disappear — the first batch's corrections must survive intact
+11. (build 6) Traditional Chinese transcription: proofread corrections must
+    stay in traditional characters, never drift to simplified
 ```
 
 ## What to Test — macOS
