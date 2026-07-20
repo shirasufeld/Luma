@@ -147,6 +147,11 @@ actor BroadcastAudioProvider: AudioInputProviding {
         }
         continuation?.finish()
         continuation = nil
+        // A graceful `.finished` notification means the watchdog's job is
+        // done; leaving it running would fire a spurious "went silent" error
+        // once the timeout elapses on a stream that already ended cleanly.
+        watchdog?.cancel()
+        watchdog = nil
     }
 
     private func teardown() {
