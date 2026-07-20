@@ -65,9 +65,10 @@ struct IntelligencePromptsTests {
 
     @Test func fewShotExampleMatchesTranscriptLanguage() {
         // The example must be in the language being proofread — this holds
-        // for every app language, not just Chinese.
+        // for every app language, not just Chinese. zh-Hans and zh-Hant must
+        // get script-matched examples, not the same simplified string.
         for (identifier, fragment) in [
-            ("zh-Hans", "二极管"), ("zh-Hant", "二极管"), ("ja-JP", "意外"),
+            ("zh-Hans", "二极管"), ("zh-Hant", "二極管"), ("ja-JP", "意外"),
             ("ko-KR", "낫기를"), ("es-ES", "a ver"), ("fr-FR", "vaut"),
             ("de-DE", "seid"), ("en_US", "burns"), ("it-IT", "burns"),
         ] {
@@ -75,6 +76,20 @@ struct IntelligencePromptsTests {
                 for: Locale(identifier: identifier))
             #expect(instructions.contains(fragment), "missing \(fragment) for \(identifier)")
         }
+    }
+
+    @Test func fewShotExampleFallsBackToRegionWhenScriptIsBare() {
+        // Real transcription locales carry an explicit script subtag
+        // (zh-Hans-CN/zh-Hant-TW), but a region-only identifier without one
+        // must still resolve to the right script via region.
+        let traditional = IntelligencePrompts.transcriptionInstructions(
+            for: Locale(identifier: "zh-TW"))
+        #expect(traditional.contains("二極管"))
+        #expect(!traditional.contains("二极管"))
+
+        let simplified = IntelligencePrompts.transcriptionInstructions(
+            for: Locale(identifier: "zh-CN"))
+        #expect(simplified.contains("二极管"))
     }
 
     @Test func englishNamesResolve() {

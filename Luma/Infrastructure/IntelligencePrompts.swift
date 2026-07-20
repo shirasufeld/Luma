@@ -45,13 +45,28 @@ nonisolated enum IntelligencePrompts {
     /// without a curated example fall back to the English one.
     static func homophoneExample(for locale: Locale) -> (wrong: String, right: String) {
         switch locale.language.languageCode?.identifier {
-        case "zh": ("我们把交流电接入二级管", "我们把交流电接入二极管")
+        case "zh":
+            isTraditionalChinese(locale)
+                ? ("我們把交流電接入二級管", "我們把交流電接入二極管")
+                : ("我们把交流电接入二级管", "我们把交流电接入二极管")
         case "ja": ("それは以外な結果でした", "それは意外な結果でした")
         case "ko": ("감기가 빨리 낳기를 바랍니다", "감기가 빨리 낫기를 바랍니다")
         case "es": ("vamos haber qué pasa", "vamos a ver qué pasa")
         case "fr": ("il faut mieux partir tôt", "il vaut mieux partir tôt")
         case "de": ("ihr seit alle bereit", "ihr seid alle bereit")
         default: ("the resistor bums out under load", "the resistor burns out under load")
+        }
+    }
+
+    /// `languageCode` alone can't tell Simplified from Traditional Chinese.
+    /// Real transcription locales carry an explicit script subtag (e.g.
+    /// `zh-Hant-TW`), which resolves directly; a bare region-only identifier
+    /// (e.g. `zh-TW`) falls back to the region's conventional script.
+    private static func isTraditionalChinese(_ locale: Locale) -> Bool {
+        if let script = locale.language.script { return script == .hanTraditional }
+        switch locale.region?.identifier {
+        case "TW", "HK", "MO": return true
+        default: return false
         }
     }
 

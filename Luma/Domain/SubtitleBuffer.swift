@@ -69,17 +69,28 @@ nonisolated struct SubtitleBuffer: Sendable, Equatable {
     /// Back-fills one chunk's corrections. Stale batches are refused and
     /// vanished entries skipped, so late results can never corrupt state —
     /// the same UUID-addressed discipline as `applyTranslation`.
+    ///
+    /// An update can target an entry outside this batch's own scope: the
+    /// punctuation pre-pass hands leading stray punctuation back across the
+    /// proofread boundary onto the previous batch's last entry. That entry
+    /// already has a correction owned by the earlier batch, so its ownership
+    /// must not transfer to this batch — otherwise reverting this batch
+    /// would wipe out the earlier batch's unrelated correction too. Only an
+    /// entry with no existing correction (genuinely first touched by this
+    /// batch) takes on `batchID`.
     mutating func applyProofread(_ updates: [ProofreadCorrectionUpdate], batchID: UUID) {
         guard batchID == lastProofreadBatch?.id else { return }
         for update in updates {
             guard let index = entries.lastIndex(where: { $0.id == update.segmentID })
             else { continue }
             if let text = update.correctedText {
-                entries[index].correctedText = ProofreadCorrection(text: text, batchID: batchID)
+                let owner = entries[index].correctedText?.batchID ?? batchID
+                entries[index].correctedText = ProofreadCorrection(text: text, batchID: owner)
             }
             if let translation = update.correctedTranslation {
+                let owner = entries[index].correctedTranslation?.batchID ?? batchID
                 entries[index].correctedTranslation = ProofreadCorrection(
-                    text: translation, batchID: batchID)
+                    text: translation, batchID: owner)
             }
         }
     }

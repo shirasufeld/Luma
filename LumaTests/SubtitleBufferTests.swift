@@ -209,6 +209,52 @@ struct SubtitleBufferTests {
         #expect(buffer.proofreadBoundaryID == first.id)
     }
 
+    @Test func crossBatchHandoffPreservesEarlierBatchOwnership() {
+        // PunctuationNormalizer can hand a new batch's leading stray
+        // punctuation back onto the previous batch's last entry. That
+        // hand-off update still arrives tagged with the new batch's id, but
+        // ownership of an entry that was already corrected by an earlier
+        // batch must not silently transfer — otherwise reverting the new
+        // batch wipes out the earlier batch's legitimate correction too.
+        var buffer = SubtitleBuffer()
+        let first = makeSegment("helo", start: 0, end: 1)
+        let second = makeSegment("world", start: 1, end: 2)
+        buffer.applyFinalized(first)
+        buffer.applyFinalized(second)
+
+        let batchA = ProofreadBatch(id: UUID(), previousBoundaryID: nil, boundaryID: first.id)
+        buffer.beginProofreadBatch(batchA)
+        buffer.applyProofread(
+            [
+                ProofreadCorrectionUpdate(
+                    segmentID: first.id, correctedText: "hello", correctedTranslation: nil)
+            ],
+            batchID: batchA.id)
+
+        let batchB = ProofreadBatch(
+            id: UUID(), previousBoundaryID: first.id, boundaryID: second.id)
+        buffer.beginProofreadBatch(batchB)
+        // Batch B's own update (second) arrives together with the
+        // cross-boundary hand-off update (first), both tagged batchB.id.
+        buffer.applyProofread(
+            [
+                ProofreadCorrectionUpdate(
+                    segmentID: first.id, correctedText: "hello.", correctedTranslation: nil),
+                ProofreadCorrectionUpdate(
+                    segmentID: second.id, correctedText: "World", correctedTranslation: nil),
+            ],
+            batchID: batchB.id)
+
+        #expect(buffer.entries[0].displayText == "hello.")
+        #expect(buffer.entries[0].correctedText?.batchID == batchA.id)
+
+        // Reverting batch B must not reach back into batch A's entry.
+        buffer.revertLastProofread()
+        #expect(buffer.entries[0].displayText == "hello.")
+        #expect(buffer.entries[1].displayText == "world")
+        #expect(buffer.proofreadBoundaryID == first.id)
+    }
+
     @Test func clearResetsProofreadState() {
         var buffer = SubtitleBuffer()
         let segment = makeSegment("aaa", start: 0, end: 1)
