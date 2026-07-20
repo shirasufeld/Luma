@@ -73,16 +73,15 @@ AudioInputProviding                     TranscriptionProviding
 
 - 部署目标 macOS 26.0；macOS 27 增强一律 `if #available(macOS 27.0, *)`，集中在 Infrastructure：
   - 音频格式转换：27 用 `AnalyzerInputConverter`，26 用 `AVAudioConverter` 手动转换（同一协议方法内部分支）。
-  - 翻译策略：26.4+ 用 `Strategy.lowLatency`。
+  - 翻译策略：26.4+ 按档位选 `Strategy`（fast→lowLatency、accurate→highFidelity）；更低版本无策略参数，用默认 init。
 - 不为未查证 API 写代码；不确定处用 TODO + 协议隔离（见 research.md §7）。
 
 ## 翻译管线细节
 
 1. 运行期：`TranslationSession(installedSource:target:)`（macOS 26+ 程序化 init，仅限已安装语言对）。session 随「语言对 + 模式」缓存，变更时重建并 `prepareTranslation()` 预热。
-2. 三档模式（`TranslationMode`）：
-   - **fast**：lowLatency 策略 + volatile 实时刷新——独立 worker 经 `bufferingNewest(1)` 流消费未定稿文本（永远只保留最新快照），相同文本跳过，每次请求后休眠 250ms 限制资源占用；定稿时实时译文被正式译文取代。
-   - **balanced**：lowLatency 策略，仅翻译 finalized segment（默认档）。
-   - **accurate**：highFidelity 策略（macOS 26.4+，可用时为 Apple Intelligence 模型），仅翻译 finalized segment。
+2. 二档模式（`TranslationMode`，显示名「实时 / 准确」；rawValue "fast"/"accurate" 为历史遗留，保持稳定以兼容持久化）：
+   - **fast（实时）**：lowLatency 策略 + volatile 实时刷新——独立 worker 经 `bufferingNewest(1)` 流消费未定稿文本（永远只保留最新快照），相同文本跳过，每次请求后休眠 250ms 限制资源占用；定稿时实时译文被正式译文取代。
+   - **accurate（准确，默认档）**：仅翻译 finalized segment；26.4+ 用 highFidelity 策略（可用时为 Apple Intelligence 模型），更低版本回退默认策略。0.9.2 起取代原「均衡」档，已存 "balanced" 静默迁移到本档。
 3. finalized 翻译按到达顺序串行处理（独立 worker，不阻塞转写事件循环），按 segment UUID 回填 SubtitleBuffer。
 4. 模型下载：`LanguageAvailability.status == .supported`（未安装）时，UI 提示并挂载隐藏 `TranslationDownloadBridge` view（`.translationTask` + `prepareTranslation()`）触发系统下载流程；完成后切回程序化 session。
 5. 不可用语言对：字幕回退为原文 + 状态栏明示。

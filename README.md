@@ -24,12 +24,12 @@ Picture window on iOS.
   - iOS: microphone via `AVAudioEngine`, plus **other-app system audio** via a ReplayKit
     Broadcast Upload Extension (the extension forwards PCM through an App Group; the app
     transcribes — iOS has no in-process API for other apps' audio)
-- On-device translation with three presets:
-  - **Fast** — re-translates the in-progress line as it changes (low-latency model,
+- On-device translation with two presets:
+  - **Real-time** — re-translates the in-progress line as it changes (low-latency model,
     throttled to bound resource use)
-  - **Balanced** — translates each finalized sentence with the low-latency model
-  - **Accurate** — translates finalized sentences with the high-fidelity strategy
-    (Apple Intelligence when available, macOS 26.4 / iOS 26.4+)
+  - **Accurate** (default) — translates finalized sentences with the high-fidelity strategy
+    (Apple Intelligence when available, macOS 26.4 / iOS 26.4+; the system default model
+    on earlier versions)
 - **Caption surface** (native idiom per platform):
   - macOS: floating, always-on-top `NSPanel` overlay — Liquid Glass / material / solid
     surfaces, draggable and resizable, joins all Spaces and full-screen apps, automatic
