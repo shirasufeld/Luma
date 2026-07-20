@@ -28,15 +28,15 @@ ASC App 记录,各自 archive 与上传。签名身份(team、bundle id)在 giti
 
 ```
 New in 0.9.1 — on-device Apple Intelligence (requires Apple Intelligence
-enabled in system settings; the ✦ button only appears when it is available
+enabled in system settings; the Proofread button only appears when it is available
 for the transcription language — see Settings › Diagnostics):
-1. Smart Proofread (✦): transcribe a minute of speech, press ✦ — corrected
+1. Smart Proofread: transcribe a minute of speech, press Proofread button — corrected
    sentences flash briefly, a gradient divider marks "proofread up to here",
    and live transcription keeps appending below it while it works
-2. Press ✦ mid-session: ongoing captions must never pause or reorder
-3. Long-press / open the ✦ menu → Revert Last Proofread restores the raw text
+2. Press Proofread button mid-session: ongoing captions must never pause or reorder
+3. Long-press / open the Proofread button menu → Revert Last Proofread restores the raw text
 4. Settings › General › Apple Intelligence: the two toggles (transcription /
-   translation proofread) take effect on the next ✦ press
+   translation proofread) take effect on the next Proofread button press
 5. With translation on: translated lines get reviewed against the corrected
    source (pairs whose translation was still pending stay as-is)
 6. Apple Intelligence menu: Summary, Reformat, Rewrite, Friendly,
@@ -46,7 +46,7 @@ for the transcription language — see Settings › Diagnostics):
 7. Exports (TXT/SRT) contain the corrected text after proofreading
 8. In-app language override applies to the result card and all new UI
 9. Reduce Motion: the glow becomes a static border, no sweep animation
-10. (build 6) Press ✦ twice in the same session (two separate batches), then
+10. (build 6) Press Proofread button twice in the same session (two separate batches), then
     Revert Last Proofread: only the second batch's corrections should
     disappear — the first batch's corrections must survive intact
 11. (build 6) Traditional Chinese transcription: proofread corrections must
