@@ -82,12 +82,6 @@ nonisolated protocol IntelligenceProviding: Sendable {
         _ parts: [TranscriptSummary], locale: Locale
     ) async throws -> TranscriptSummary
 
-    /// Map step: the most important points of one chunk.
-    func keyPoints(chunk: String, locale: Locale) async throws -> [String]
-
-    /// Reduce step: merge per-chunk point lists, deduplicated.
-    func combineKeyPoints(_ parts: [[String]], locale: Locale) async throws -> [String]
-
     /// Topic/detail rows for the convert-to-table operation (map-only;
     /// callers concatenate rows across chunks).
     func tableRows(chunk: String, locale: Locale) async throws -> [TranscriptTableRow]

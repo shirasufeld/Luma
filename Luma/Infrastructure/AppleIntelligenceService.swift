@@ -50,12 +50,6 @@ private struct SummaryDraft {
 }
 
 @Generable
-private struct KeyPointsDraft {
-    @Guide(description: "3 to 7 short key points, in the passage's language, original order.")
-    var points: [String]
-}
-
-@Generable
 private struct TableRowsDraft {
     @Guide(description: "One row per distinct topic of the passage, in the original order.")
     var rows: [TableRowDraft]
@@ -154,35 +148,6 @@ nonisolated final class AppleIntelligenceService: IntelligenceProviding {
                 options: GenerationOptions(maximumResponseTokens: 500))
             return TranscriptSummary(
                 abstract: response.content.abstract, keyPoints: response.content.keyPoints)
-        } catch {
-            throw Self.mapped(error)
-        }
-    }
-
-    @concurrent
-    func keyPoints(chunk: String, locale: Locale) async throws -> [String] {
-        do {
-            let session = try Self.makeSession(
-                instructions: IntelligencePrompts.keyPointsInstructions())
-            let response = try await session.respond(
-                to: chunk, generating: KeyPointsDraft.self,
-                options: GenerationOptions(maximumResponseTokens: 400))
-            return response.content.points
-        } catch {
-            throw Self.mapped(error)
-        }
-    }
-
-    @concurrent
-    func combineKeyPoints(_ parts: [[String]], locale: Locale) async throws -> [String] {
-        do {
-            let session = try Self.makeSession(
-                instructions: IntelligencePrompts.combineKeyPointsInstructions())
-            let response = try await session.respond(
-                to: IntelligencePrompts.keyPointsCombinePrompt(parts: parts),
-                generating: KeyPointsDraft.self,
-                options: GenerationOptions(maximumResponseTokens: 400))
-            return response.content.points
         } catch {
             throw Self.mapped(error)
         }

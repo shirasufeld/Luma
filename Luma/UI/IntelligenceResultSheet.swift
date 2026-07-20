@@ -4,7 +4,6 @@ import UniformTypeIdentifiers
 /// Which rewrite the Apple Intelligence menu launched.
 nonisolated enum IntelligenceOperation: String, Identifiable, Sendable {
     case summary
-    case keyPoints
     case reformat
     case rewrite
     case friendly
@@ -16,7 +15,7 @@ nonisolated enum IntelligenceOperation: String, Identifiable, Sendable {
     var id: String { rawValue }
 
     /// The prose pipeline style for map-only operations; nil for the
-    /// map-reduce ones (summary, key points) and the table.
+    /// map-reduce summary and the table.
     var proseStyle: RewriteStyle? {
         switch self {
         case .reformat: .reformat
@@ -25,7 +24,7 @@ nonisolated enum IntelligenceOperation: String, Identifiable, Sendable {
         case .professional: .professional
         case .concise: .concise
         case .list: .bulletList
-        case .summary, .keyPoints, .table: nil
+        case .summary, .table: nil
         }
     }
 }
@@ -44,7 +43,6 @@ final class IntelligenceSheetModel {
 
     private(set) var phase: Phase = .working(step: 0, total: 0)
     private(set) var summary: TranscriptSummary?
-    private(set) var points: [String] = []
     private(set) var rows: [TranscriptTableRow] = []
     private(set) var reformatted = ""
 
@@ -81,8 +79,6 @@ final class IntelligenceSheetModel {
             guard let summary else { return "" }
             return summary.abstract + "\n\n"
                 + summary.keyPoints.map { "- \($0)" }.joined(separator: "\n")
-        case .keyPoints:
-            return points.map { "- \($0)" }.joined(separator: "\n")
         case .table:
             let header = String(localized: "Topic", locale: AppLanguage.currentLocale())
             let detail = String(localized: "Detail", locale: AppLanguage.currentLocale())
@@ -107,7 +103,6 @@ final class IntelligenceSheetModel {
         task = nil
         phase = .working(step: 0, total: 0)
         summary = nil
-        points = []
         rows = []
         reformatted = ""
         start()
@@ -121,8 +116,6 @@ final class IntelligenceSheetModel {
             switch operation {
             case .summary:
                 try await runSummary(chunks: chunks)
-            case .keyPoints:
-                try await runKeyPoints(chunks: chunks)
             case .table:
                 try await runTable(chunks: chunks)
             case .reformat, .rewrite, .friendly, .professional, .concise, .list:
@@ -164,29 +157,6 @@ final class IntelligenceSheetModel {
                     locale: AppLanguage.currentLocale()))
         }
         summary = merged
-        phase = .finished
-    }
-
-    private func runKeyPoints(chunks: [IntelligenceChunker.Chunk]) async throws {
-        var drafts: [[String]] = []
-        phase = .working(step: 0, total: chunks.count + 1)
-        for (index, chunk) in chunks.enumerated() {
-            try Task.checkCancellation()
-            phase = .working(step: index + 1, total: chunks.count + 1)
-            do {
-                drafts.append(
-                    try await intelligence.keyPoints(
-                        chunk: chunk.sentences.joined(separator: "\n"), locale: locale))
-            } catch IntelligenceError.guardrailViolation, IntelligenceError.refusal {
-                continue
-            }
-        }
-        guard !drafts.isEmpty else { throw IntelligenceError.guardrailViolation }
-        phase = .working(step: chunks.count + 1, total: chunks.count + 1)
-        points =
-            drafts.count == 1
-            ? drafts[0]
-            : try await intelligence.combineKeyPoints(drafts, locale: locale)
         phase = .finished
     }
 
@@ -367,8 +337,6 @@ struct IntelligenceResultSheet: View {
                     bulletList(summary.keyPoints)
                 }
             }
-        case .keyPoints:
-            bulletList(model.points)
         case .table:
             Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
                 ForEach(Array(model.rows.enumerated()), id: \.offset) { _, row in
@@ -406,7 +374,6 @@ struct IntelligenceResultSheet: View {
     private var title: LocalizedStringKey {
         switch model.operation {
         case .summary: "Summary"
-        case .keyPoints: "Key Points"
         case .reformat: "Reformatted Transcript"
         case .rewrite: "Rewritten Transcript"
         case .friendly: "Friendly Rewrite"
@@ -419,7 +386,7 @@ struct IntelligenceResultSheet: View {
 
     private var defaultFilename: String {
         switch model.operation {
-        case .summary, .keyPoints:
+        case .summary:
             String(localized: "Luma Summary", locale: AppLanguage.currentLocale())
         case .reformat, .rewrite, .friendly, .professional, .concise, .list, .table:
             String(localized: "Luma Transcript", locale: AppLanguage.currentLocale())

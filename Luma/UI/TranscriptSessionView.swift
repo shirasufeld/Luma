@@ -177,10 +177,20 @@ struct TranscriptSessionView: View {
     @ViewBuilder
     private var broadcastStatusBadge: some View {
         if let broadcastMonitor, store.inputKind == .systemAudio {
-            if broadcastMonitor.isBroadcastActive {
+            if broadcastMonitor.isBroadcastActive, store.sessionState == .running {
                 Label("Capturing system audio", systemImage: "dot.radiowaves.left.and.right")
                     .font(.caption)
                     .foregroundStyle(.green)
+            } else if broadcastMonitor.isBroadcastActive {
+                // The broadcast can be started out of order (it's the more
+                // eye-catching control): audio is flowing into the system
+                // picker but nothing is transcribing it yet.
+                Label(
+                    "Broadcasting, but Luma hasn't started — press Start",
+                    systemImage: "exclamationmark.circle"
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
             } else if store.sessionState == .running {
                 Label(
                     "Waiting for the screen broadcast — tap the record button",
@@ -363,9 +373,6 @@ struct TranscriptSessionView: View {
                 Section {
                     Button("Summary…", systemImage: "text.append") {
                         intelligenceOperation = .summary
-                    }
-                    Button("Key Points…", systemImage: "list.star") {
-                        intelligenceOperation = .keyPoints
                     }
                 }
                 Section {
@@ -589,6 +596,14 @@ struct TranscriptSessionView: View {
                     .lineLimit(1)
                     .help(message)
             }
+            if store.proofreadActivity != .idle {
+                // The toolbar spinner only says "something is happening";
+                // this gives a concrete number so a slow on-device model
+                // doesn't read as a hang, especially on iPhone.
+                Label(proofreadProgressLabel, systemImage: "sparkles")
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
             // The language pair moved into the interactive main-screen menu;
             // keep the readout only when that menu is unavailable.
             if capabilities == nil {
@@ -633,6 +648,13 @@ struct TranscriptSessionView: View {
         case .ready: "checkmark.circle"
         case .failed: "exclamationmark.triangle"
         }
+    }
+
+    private var proofreadProgressLabel: LocalizedStringKey {
+        if case .running(_, let done, let total) = store.proofreadActivity, total > 0 {
+            return "Proofreading… \(done)/\(total)"
+        }
+        return "Proofreading…"
     }
 
     private var modelLabel: LocalizedStringKey {

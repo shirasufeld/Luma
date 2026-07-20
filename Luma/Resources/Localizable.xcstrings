@@ -85,30 +85,6 @@
         "de" : { "stringUnit" : { "state" : "translated", "value" : "Freundlich…" } }
       }
     },
-    "Key Points" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Key Points" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "要点" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "要點" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "要点" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "요점" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Puntos clave" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Points clés" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kernpunkte" } }
-      }
-    },
-    "Key Points…" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Key Points…" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "要点…" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "要點…" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "要点抽出…" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "요점…" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Puntos clave…" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Points clés…" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kernpunkte…" } }
-      }
-    },
     "Professional Rewrite" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Professional Rewrite" } },
@@ -1125,6 +1101,112 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Korrektur wurde nicht abgeschlossen. Versuche es gleich noch einmal."
+          }
+        }
+      }
+    },
+    "Proofreading…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proofreading…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "校对中…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "校對中…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "校正中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "교정 중…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corrigiendo…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Correction en cours…"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird korrigiert…"
+          }
+        }
+      }
+    },
+    "Proofreading… %lld/%lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proofreading… %lld/%lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "校对中… %lld/%lld"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "校對中… %lld/%lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "校正中… %lld/%lld"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "교정 중… %lld/%lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corrigiendo… %lld/%lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Correction en cours… %lld/%lld"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird korrigiert… %lld/%lld"
           }
         }
       }
@@ -2167,6 +2249,53 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ausgewogen: übersetzt jeden finalisierten Satz mit dem latenzarmen Modell."
+          }
+        }
+      }
+    },
+    "Broadcasting, but Luma hasn't started — press Start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "屏幕录制已开始,但 Luma 尚未开始转录——按下「开始」"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "螢幕錄製已開始,但 Luma 尚未開始轉錄——按下「開始」"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画面ブロードキャストは開始されましたが、Luma はまだ開始していません——「開始」を押してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "화면 방송은 시작되었지만 Luma는 아직 시작되지 않았습니다 — '시작'을 누르세요"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retransmisión en curso, pero Luma aún no ha comenzado — pulsa Iniciar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diffusion en cours, mais Luma n'a pas démarré — appuyez sur Démarrer"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildschirmübertragung läuft, aber Luma wurde noch nicht gestartet — tippe auf „Starten“"
           }
         }
       }
