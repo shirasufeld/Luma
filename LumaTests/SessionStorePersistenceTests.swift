@@ -52,7 +52,7 @@ struct SessionStorePersistenceTests {
         let store = SessionStore(defaults: makeDefaults())
         #expect(store.inputKind == .microphone)
         #expect(store.languagePair == .default)
-        #expect(store.translationMode == .balanced)
+        #expect(store.translationMode == .accurate)
     }
 
     @Test func garbageValuesFallBackToDefaults() {
@@ -61,6 +61,22 @@ struct SessionStorePersistenceTests {
         defaults.set("interpretive-dance", forKey: "translation.mode")
         let store = SessionStore(defaults: defaults)
         #expect(store.inputKind == .microphone)
-        #expect(store.translationMode == .balanced)
+        #expect(store.translationMode == .accurate)
+    }
+
+    @Test func storedBalancedMigratesToAccurate() {
+        // 0.9.1 had a three-tier picker; a persisted "balanced" must land on
+        // the mode with identical cadence, not on fast.
+        let defaults = makeDefaults()
+        defaults.set("balanced", forKey: "translation.mode")
+        let store = SessionStore(defaults: defaults)
+        #expect(store.translationMode == .accurate)
+    }
+
+    @Test func storedFastRoundTrips() {
+        let defaults = makeDefaults()
+        defaults.set("fast", forKey: "translation.mode")
+        let store = SessionStore(defaults: defaults)
+        #expect(store.translationMode == .fast)
     }
 }

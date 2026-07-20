@@ -25,7 +25,7 @@ actor SessionController {
     // Translation runs on its own serial queue so slow translations never
     // stall the transcript event loop.
     private var translationReady = false
-    private var translationMode: TranslationMode = .balanced
+    private var translationMode: TranslationMode = .accurate
     private var translationQueue: AsyncStream<TranscriptSegment>.Continuation?
     private var translationWorker: Task<Void, Never>?
 
@@ -65,7 +65,7 @@ actor SessionController {
     func start(
         languagePair: LanguagePair,
         inputKind: AudioInputKind,
-        translationMode: TranslationMode = .balanced
+        translationMode: TranslationMode = .accurate
     ) async {
         guard state == .idle else { return }
         await proofreader?.cancelActiveRun()

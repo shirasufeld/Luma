@@ -32,8 +32,7 @@ struct LanguagePairMenu: View {
             .disabled(store.sessionState != .idle)
             // Mode takes effect on the next start, so it stays enabled.
             Picker("Translation Mode", selection: $store.translationMode) {
-                Text("Fast").tag(TranslationMode.fast)
-                Text("Balanced").tag(TranslationMode.balanced)
+                Text("Real-time").tag(TranslationMode.fast)
                 Text("Accurate").tag(TranslationMode.accurate)
             }
             .pickerStyle(.menu)

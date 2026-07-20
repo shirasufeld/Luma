@@ -119,14 +119,14 @@ struct SessionControllerTests {
         await controller.stop()
     }
 
-    @Test func balancedModeDoesNotTranslateVolatileText() async {
+    @Test func accurateModeDoesNotTranslateVolatileText() async {
         let range = makeSegment("x", start: 0, end: 1).range
         let (store, controller) = makeController(events: [
             .volatile(text: AttributedString("hello there"), range: range)
         ])
 
         await controller.start(
-            languagePair: .default, inputKind: .microphone, translationMode: .balanced)
+            languagePair: .default, inputKind: .microphone, translationMode: .accurate)
         // Give the pipeline a moment; no volatile translation may appear.
         _ = await waitUntil(timeout: .milliseconds(300)) { false }
         #expect(store.volatileTranslation == nil)

@@ -60,7 +60,7 @@ final class SessionStore {
             defaults.set(inputKind.rawValue, forKey: inputKindDefaultsKey)
         }
     }
-    var translationMode: TranslationMode = .balanced {
+    var translationMode: TranslationMode = .accurate {
         didSet {
             guard didRestore else { return }
             defaults.set(translationMode.rawValue, forKey: translationModeDefaultsKey)

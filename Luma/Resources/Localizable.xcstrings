@@ -1924,49 +1924,143 @@
         }
       }
     },
-    "Accurate: translates finalized sentences with the high-fidelity model (Apple Intelligence when available). Best quality, more latency." : {
+    "Accurate: translates each sentence once it is finalized, using the highest-quality translation model available (Apple Intelligence high fidelity on supported systems)." : {
       "extractionState" : "manual",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "「准确」：定稿后使用高保真模型（可用时为 Apple Intelligence）翻译。质量最佳，延迟较高。"
+            "value" : "「准确」：每句定稿后翻译，使用系统可用的最高质量翻译模型（支持时为 Apple Intelligence 高保真模型）。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "精準:使用高保真模型(可用時採用 Apple Intelligence)翻譯已定稿句子。品質最佳,延遲較高。"
+            "value" : "精準:每句定稿後翻譯,使用系統可用的最高品質翻譯模型(支援時為 Apple Intelligence 高保真模型)。"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "高精度:確定した文を高品質モデル(利用可能な場合は Apple Intelligence)で翻訳します。品質は最高ですが、遅延が増えます。"
+            "value" : "高精度:各文の確定後に、利用可能な最高品質の翻訳モデル(対応システムでは Apple Intelligence の高品質モデル)で翻訳します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "정확: 확정된 문장을 고품질 모델(가능한 경우 Apple Intelligence)로 번역합니다. 품질이 가장 좋지만 지연이 큽니다."
+            "value" : "정확: 각 문장이 확정된 후 사용 가능한 최고 품질의 번역 모델(지원 시 Apple Intelligence 고품질 모델)로 번역합니다."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Precisa: traduce las frases finalizadas con el modelo de alta fidelidad (Apple Intelligence cuando esté disponible). La mejor calidad, con más latencia."
+            "value" : "Precisa: traduce cada frase al finalizarse, con el modelo de traducción de mayor calidad disponible (alta fidelidad de Apple Intelligence en sistemas compatibles)."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Précis : traduit les phrases finalisées avec le modèle haute fidélité (Apple Intelligence si disponible). Meilleure qualité, latence accrue."
+            "value" : "Précis : traduit chaque phrase une fois finalisée, avec le modèle de traduction de la meilleure qualité disponible (haute fidélité Apple Intelligence sur les systèmes compatibles)."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Präzise: übersetzt finalisierte Sätze mit dem High-Fidelity-Modell (Apple Intelligence, falls verfügbar). Beste Qualität, mehr Latenz."
+            "value" : "Präzise: übersetzt jeden Satz nach der Finalisierung mit dem hochwertigsten verfügbaren Übersetzungsmodell (Apple Intelligence High Fidelity auf unterstützten Systemen)."
+          }
+        }
+      }
+    },
+    "Real-time" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "实时"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "即時"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リアルタイム"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실시간"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo real"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temps réel"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Echtzeit"
+          }
+        }
+      }
+    },
+    "Real-time: also translates the line being spoken as it updates, using the low-latency translation model. Most responsive; higher resource use." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「实时」：边说边译，随未定稿文本变化即时刷新译文，使用低延迟翻译模型。响应最快，资源占用较高。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "即時:邊說邊譯,臨時字幕每次更新即以低延遲模型重譯。回應最快,資源消耗較高。"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リアルタイム:話している最中の行も更新されるたびに低遅延モデルで翻訳します。最も反応が速い分、リソース消費が増えます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실시간: 말하는 중인 줄도 갱신될 때마다 저지연 모델로 번역합니다. 가장 빠르지만 리소스를 더 사용합니다."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo real: también traduce la línea que se está diciendo a medida que cambia, con el modelo de baja latencia. La más ágil; mayor uso de recursos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temps réel : traduit aussi la ligne en cours d'énonciation à mesure qu'elle change, avec le modèle à faible latence. Le plus réactif ; consommation accrue."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Echtzeit: übersetzt auch die gerade gesprochene Zeile bei jeder Änderung, mit dem latenzarmen Modell. Am reaktionsschnellsten; höherer Ressourcenbedarf."
           }
         }
       }
@@ -2155,100 +2249,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hintergrund"
-          }
-        }
-      }
-    },
-    "Balanced" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "均衡"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "均衡"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "バランス"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "균형"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Equilibrada"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Équilibré"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ausgewogen"
-          }
-        }
-      }
-    },
-    "Balanced: translates each finalized sentence with the low-latency translation model." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "「均衡」：每句定稿后立即用低延迟翻译模型翻译。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "均衡:使用低延遲翻譯模型翻譯每個已定稿句子。"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "バランス:確定した文を低遅延の翻訳モデルで翻訳します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "균형: 확정된 문장을 저지연 번역 모델로 번역합니다."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Equilibrada: traduce cada frase finalizada con el modelo de baja latencia."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Équilibré : traduit chaque phrase finalisée avec le modèle à faible latence."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ausgewogen: übersetzt jeden finalisierten Satz mit dem latenzarmen Modell."
           }
         }
       }
@@ -2766,100 +2766,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Export fehlgeschlagen"
-          }
-        }
-      }
-    },
-    "Fast" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "快速"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "快速"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "高速"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "빠름"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rápida"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rapide"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schnell"
-          }
-        }
-      }
-    },
-    "Fast: re-translates the in-progress line as it updates, using the low-latency translation model. Most responsive; higher resource use." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "「快速」：随未定稿文本变化即时刷新译文，使用低延迟翻译模型。响应最快，资源占用较高。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "快速:臨時字幕每次更新即以低延遲模型重譯。回應最快,資源消耗較高。"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "高速:入力中の行が更新されるたびに低遅延モデルで再翻訳します。最も反応が速い分、リソース消費が増えます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "빠름: 진행 중인 줄이 갱신될 때마다 저지연 모델로 다시 번역합니다. 가장 빠르지만 리소스를 더 사용합니다."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rápida: retraduce la línea en curso a medida que cambia, con el modelo de baja latencia. La más ágil; mayor uso de recursos."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rapide : retraduit la ligne en cours à mesure qu'elle change, avec le modèle à faible latence. Le plus réactif ; consommation accrue."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schnell: übersetzt die laufende Zeile bei jeder Änderung neu, mit dem latenzarmen Modell. Am reaktionsschnellsten; höherer Ressourcenbedarf."
           }
         }
       }

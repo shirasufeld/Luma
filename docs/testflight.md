@@ -70,7 +70,7 @@ Please test:
 2. Live transcription from microphone (start / pause / stop / clear)
 3. System audio capture: play a video in another app, select system audio input,
    confirm captions follow
-4. Translation presets: Fast (translates the in-progress line), Balanced, Accurate —
+4. Translation presets: Real-time (also translates the in-progress line) / Accurate —
    switch language pairs and confirm capability warnings appear for unsupported pairs
 5. Floating subtitle overlay: drag, resize, follows full-screen apps and Spaces;
    turn on Reduce Transparency and confirm the solid fallback
@@ -109,7 +109,7 @@ Please test:
    and font-size settings apply
 6. Background capture: with mic or broadcast running, background Luma and
    confirm transcription continues
-7. Translation presets (Fast / Balanced / Accurate), language-pair switching,
+7. Translation presets (Real-time / Accurate), language-pair switching,
    capability warnings — same as macOS
 8. TXT and SRT export via the document picker
 9. In-app language switching (System / English / 简体中文) without relaunch

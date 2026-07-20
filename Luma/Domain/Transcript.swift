@@ -46,15 +46,14 @@ nonisolated enum TranscriptionModelState: Sendable, Equatable {
     case failed(String)
 }
 
-/// Trade-off preset for live translation.
+/// Trade-off preset for live translation. Displayed as "Real-time" / "Accurate";
+/// raw values predate the rename and stay stable for persistence.
 nonisolated enum TranslationMode: String, Sendable, CaseIterable, Identifiable {
-    /// Re-translates the in-progress (volatile) line as it updates, using the
-    /// low-latency model. Most responsive, highest resource use.
+    /// Real-time: re-translates the in-progress (volatile) line as it updates,
+    /// using the low-latency model. Most responsive, highest resource use.
     case fast
-    /// Translates each finalized sentence with the low-latency model.
-    case balanced
-    /// Translates finalized sentences with the high-fidelity model
-    /// (Apple Intelligence when available). Best quality, more latency.
+    /// Translates finalized sentences with the best model available: high
+    /// fidelity (Apple Intelligence) on 26.4+, the default strategy below.
     case accurate
 
     var id: String { rawValue }

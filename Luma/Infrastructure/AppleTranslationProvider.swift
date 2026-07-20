@@ -92,7 +92,7 @@ private nonisolated final class TranslationEngine: @unchecked Sendable {
             let strategy: TranslationSession.Strategy =
                 switch mode {
                 case .accurate: .highFidelity
-                case .fast, .balanced: .lowLatency
+                case .fast: .lowLatency
                 }
             return TranslationSession(
                 installedSource: source, target: target, preferredStrategy: strategy)
